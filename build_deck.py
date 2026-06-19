@@ -21,7 +21,7 @@ RED     = RGBColor(0xE8,0x45,0x1C)
 BLUE    = RGBColor(0x05,0x63,0xC1)
 GOLD    = RGBColor(0xC9,0xA2,0x27)
 WHITE   = RGBColor(0xFF,0xFF,0xFF)
-FONT    = "Inter"
+FONT    = "Calibri"   # PPT-friendly: PowerPoint default, renders on any machine
 
 prs = Presentation()
 prs.slide_width  = Inches(13.333)
