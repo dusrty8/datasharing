@@ -343,38 +343,47 @@
     {id:'DP-2051',sub:'K. Mensah',div:'Immunology',ta:'Immunology',subreg:'Global',regionType:'Global',aff:'NovaCura Global',type:'New Purchase',exists:'No',dn:'Global Rheumatology Tracker (duplicate)',country:'Multi-country',dt:'Market research',desc:'Proposed global rheum tracker overlapping existing PMR tracker',vendor:'Orchid Market Research',natsub:'National',cadence:'Quarterly',start:'2026-09-10',expiry:'2027-09-09',rationale:'Requested global rheum tracker',cost:0,anticipated:180000,licenses:6,status:'rejected',dup:'AST-1008'}
   ];
 
-  /* ===== lookups + rollups ===== */
-  var VMAP={},AMAP={},KMAP={};
-  VENDORS.forEach(function(v){VMAP[v.id]=v;});
-  ASSETS.forEach(function(a){AMAP[a.id]=a;});
-  KPIS.forEach(function(k){KMAP[k.id]=k;});
+  /* ===== lookups + rollups (recomputed from live state) ===== */
+  var VMAP={},AMAP={},KMAP={},ROLL={},TOTAL_SPEND=0,HHI=0,VByShare=[],top2=0,CPQworst=null;
+  var QPT={Gold:3,Silver:2,Bronze:1};
   function vendorByName(n){for(var i=0;i<VENDORS.length;i++){if(VENDORS[i].name===n)return VENDORS[i];}return null;}
-  function assetsOf(vid){return ASSETS.filter(function(a){return a.vid===vid;});}
+  function assetsOf(vid){return ASSETS.filter(function(a){return a.vid===vid&&!a.draft;});}
   function kpisOfAsset(aid){return KPIS.filter(function(k){return k.src.indexOf(aid)>=0;});}
   function kpisOfVendor(vid){var s={};assetsOf(vid).forEach(function(a){kpisOfAsset(a.id).forEach(function(k){s[k.id]=k;});});return Object.keys(s).map(function(id){return KMAP[id];});}
   function tpaOfAsset(aid){for(var i=0;i<TPAS.length;i++){if(TPAS[i].assets.indexOf(aid)>=0)return TPAS[i];}return null;}
-  var QPT={Gold:3,Silver:2,Bronze:1};
-  var ROLL={};
-  VENDORS.forEach(function(v){
-    var as=assetsOf(v.id);
-    var spend=as.reduce(function(s,a){return s+a.cost;},0);
-    var qpts=as.reduce(function(s,a){return s+QPT[a.quality];},0);
-    var mix={Gold:0,Silver:0,Bronze:0};as.forEach(function(a){mix[a.quality]++;});
-    var kl=kpisOfVendor(v.id);
-    var tier1=kl.filter(function(k){return k.scope==='Global';}).length;
-    var avg=as.length?qpts/as.length:0;
-    var grade=avg>=2.6?'Gold':avg>=1.8?'Silver':'Bronze';
-    ROLL[v.id]={as:as,spend:spend,qpts:qpts,mix:mix,kl:kl,tier1:tier1,cpq:qpts?spend/qpts:0,grade:grade,purchased:as.length,offers:v.offers,subs:v.subs};
-  });
-  var TOTAL_SPEND=VENDORS.reduce(function(s,v){return s+ROLL[v.id].spend;},0);
-  VENDORS.forEach(function(v){ROLL[v.id].share=ROLL[v.id].spend/TOTAL_SPEND;});
-  var HHI=Math.round(VENDORS.reduce(function(s,v){var p=ROLL[v.id].share*100;return s+p*p;},0));
   function critScore(v){var r=ROLL[v.id];return r.mix.Gold*3+r.tier1*2+(2-r.subs);}
   function isCritical(v){var r=ROLL[v.id];return r.mix.Gold>0&&r.tier1>0&&r.subs<=1;}
-  var VByShare=VENDORS.slice().sort(function(a,b){return ROLL[b.id].share-ROLL[a.id].share;});
-  var top2=ROLL[VByShare[0].id].share+ROLL[VByShare[1].id].share;
-  /* worst cost-per-quality among non-Gold-grade vendors */
-  var CPQworst=VENDORS.slice().filter(function(v){return ROLL[v.id].grade!=='Gold';}).sort(function(a,b){return ROLL[b.id].cpq-ROLL[a.id].cpq;})[0];
+  function recompute(){
+    VMAP={};AMAP={};KMAP={};
+    VENDORS.forEach(function(v){VMAP[v.id]=v;});
+    ASSETS.forEach(function(a){AMAP[a.id]=a;});
+    KPIS.forEach(function(k){KMAP[k.id]=k;});
+    ROLL={};
+    VENDORS.forEach(function(v){
+      var as=assetsOf(v.id);
+      var spend=as.reduce(function(s,a){return s+a.cost;},0);
+      var qpts=as.reduce(function(s,a){return s+(QPT[a.quality]||0);},0);
+      var mix={Gold:0,Silver:0,Bronze:0};as.forEach(function(a){if(mix[a.quality]!=null)mix[a.quality]++;});
+      var kl=kpisOfVendor(v.id);
+      var tier1=kl.filter(function(k){return k.scope==='Global';}).length;
+      var avg=as.length?qpts/as.length:0;
+      var grade=avg>=2.6?'Gold':avg>=1.8?'Silver':'Bronze';
+      ROLL[v.id]={as:as,spend:spend,qpts:qpts,mix:mix,kl:kl,tier1:tier1,cpq:qpts?spend/qpts:0,grade:grade,purchased:as.length,offers:v.offers,subs:v.subs};
+    });
+    TOTAL_SPEND=VENDORS.reduce(function(s,v){return s+ROLL[v.id].spend;},0);
+    VENDORS.forEach(function(v){ROLL[v.id].share=TOTAL_SPEND?ROLL[v.id].spend/TOTAL_SPEND:0;});
+    HHI=Math.round(VENDORS.reduce(function(s,v){var p=ROLL[v.id].share*100;return s+p*p;},0));
+    VByShare=VENDORS.slice().sort(function(a,b){return ROLL[b.id].share-ROLL[a.id].share;});
+    top2=VByShare.length>1?ROLL[VByShare[0].id].share+ROLL[VByShare[1].id].share:(VByShare.length?ROLL[VByShare[0].id].share:0);
+    var ng=VENDORS.slice().filter(function(v){return ROLL[v.id].grade!=='Gold';}).sort(function(a,b){return ROLL[b.id].cpq-ROLL[a.id].cpq;});
+    CPQworst=ng[0]||VByShare[0];
+  }
+  recompute();
+  /* ===== mutable state, id counters + classification helpers ===== */
+  var NEXT_DP=2052, NEXT_AST=1013, NEXT_KPI=11;
+  var DIV_BRAND={Oncology:'OncoNova',Immunology:'Immunexa',Cardiology:'CardioZen',Neurology:'Neurovia','Rare Disease':'RareGene','Market Access':'Cross-brand'};
+  function classifyFlags(arch,gran){return {phi:(gran==='Patient-level')||/Claims|EMR|Dispense|Registry/.test(arch||''),pii:(gran==='HCP-level')||(gran==='Respondent-level')||arch==='Reference / master data'};}
+  function classifyQuality(arch,gran){return ((arch==='Claims (closed)'||arch==='Prescription (LRx)'||arch==='Dispense / hub')&&gran==='Patient-level')?'Gold':(arch==='Survey / PRO'||arch==='Registry'||gran==='Territory-level')?'Bronze':'Silver';}
 
   /* division filter */
   var CUR_DIV='All divisions';
@@ -573,10 +582,6 @@
       +'<div class="dx-kpi"><div class="v">'+nApp+'</div><div class="l">Approved</div><div class="d up">ready for catalogue</div><span class="s">Move-to-DC</span></div>'
       +'<div class="dx-kpi"><div class="v">'+nDup+'</div><div class="l">Duplicate flags</div><div class="d dn">caught pre-spend</div><span class="s">Atlas AI</span></div>'
       +'</div>';
-    var rail=layerRail(
-      ['Combined role-gated form','Status-driven routing','Approval chain','Region-scoped review'],
-      ['Auto-status on submit','Renewal pre-fill from catalogue','Move-to-Catalogue (draft)','Power Automate notifications'],
-      ['Duplicate-buy detection (AI)','Approval-likelihood prediction','Status dashboard','Ask Atlas','Cross-links to Catalogue / Vendor / TPA']);
     var chainNodes=[['Requester','submits combined form'],['Admin review','sets status / routes'],['Regional review','region-scoped + admin'],['CDS committee','regional + global + admin'],['Admin final','approves'],['Move to Catalogue','as a draft']];
     var chain='<div class="at-lin">'+chainNodes.map(function(n,i){return (i>0?'<span class="lar">&rarr;</span>':'')+'<div class="ln"><div class="lk">Step '+(i+1)+'</div><div class="lv">'+n[0]+'</div><div class="lm">'+n[1]+'</div></div>';}).join('')+'</div>';
     var order=['draft','offline','sn_contracting','pre_review','cilt_review','validation','in_cilt','recommendation','approved_contracting','approved_completed','rejected'];
@@ -597,7 +602,7 @@
     });
     tbl+='</tbody></table>';
     return '<div class="dx-sech"><h2>Data Requests &mdash; CDSP-DPRH</h2><p>The workflow front door. One combined, role-gated form raises and governs every data purchase before money is committed. Status is set automatically on submit, then the approval chain runs to purchase. Open a request for the full record, the role-gated tabs and the built-in automation.</p></div>'
-      +rail
+      +'<div class="at-btnrow" style="margin:0 0 16px"><button class="at-btn" id="atNewReq">New data request</button><span class="at-mini" style="margin-top:0">Raise a purchase request &mdash; status auto-routes and duplicate-buy detection runs as you fill it in.</span></div>'
       +kpis
       +'<div class="dx-card" style="margin-bottom:16px"><div class="dx-cardh"><div><h3>Approval workflow &amp; live status</h3><div class="sub">Requester &rarr; Admin review &rarr; Regional &rarr; CDS committee &rarr; Admin final &rarr; Catalogue</div></div></div>'+chain
       +'<div style="margin-top:14px">'+dash+'</div>'
@@ -605,6 +610,106 @@
       +SRC('CDSP-DPRH','SharePoint','Power Automate')+'</div>'
       +(aiDup?'<div style="margin-bottom:16px">'+aiDup+'</div>':'')
       +'<div class="dx-card"><div class="dx-cardh"><div><h3>Requests</h3><div class="sub">Click a row to open the combined, role-gated form</div></div></div>'+tbl+SRC('CDSP-DPRH','SharePoint','Veeva CRM')+'</div>';
+  }
+  /* ===== working DPRH interactions (state-driven) ===== */
+  var CUR_ROLE='requester', CUR_REQ=null;
+  function val(id){var e=document.getElementById(id);return e?e.value:'';}
+  function granOf(dt){return ({'Claims (open)':'Patient-level','Claims (closed)':'Patient-level','Claims (Dx/Px)':'Patient-level','Prescription (LRx)':'Patient-level','EMR / clinical':'Patient-level','Dispense / hub':'Patient-level','Registry':'Patient-level','Survey / PRO':'Respondent-level','Reference / master data':'HCP-level','Payer / access':'Plan-level','Sales / volume':'Territory-level','Market research':'Aggregate'})[dt]||'Aggregate';}
+  function reqActions(r,role){
+    var sub=r.natsub==='Sub-national';
+    if(r.status==='draft'){return (role==='requester'||role==='admin')?[['Submit request','__submit','1']]:[];}
+    if(sub){
+      if(role!=='admin')return [];
+      if(r.status==='offline')return [['Route to local contracting','sn_contracting','2'],['Approve purchase completed','approved_completed','1'],['Reject','rejected','x']];
+      if(r.status==='sn_contracting')return [['Approve purchase completed','approved_completed','1'],['Reject','rejected','x']];
+      return [];
+    }
+    if(r.status==='pre_review'||r.status==='cilt_review'){return role==='admin'?[['Route to validation (CDS committee)','validation','2'],['Approve in contracting','approved_contracting','1'],['Approve purchase completed','approved_completed','1'],['Reject','rejected','x']]:[];}
+    if(r.status==='validation'){return (role==='regional'||role==='admin')?[['Submit regional review','in_cilt','1']]:[];}
+    if(r.status==='in_cilt'){return (role==='regional'||role==='global'||role==='admin')?[['Submit committee recommendation','recommendation','1']]:[];}
+    if(r.status==='recommendation'){return role==='admin'?[['Approve in contracting','approved_contracting','1'],['Approve purchase completed','approved_completed','1'],['Reject','rejected','x']]:[];}
+    return [];
+  }
+  function renderActions(r,role){
+    var box=document.getElementById('atActions'); if(!box)return;
+    var acts=reqActions(r,role);
+    if(!acts.length){box.innerHTML='<div class="at-mini" style="margin-top:0">No actions for the <b>'+role+'</b> role at status &ldquo;'+statusLabel(r.status)+'&rdquo;. Switch role (e.g. Admin) to act on it.</div>';return;}
+    box.innerHTML='<div class="at-btnrow" style="margin-top:0">'+acts.map(function(a){return '<button class="'+(a[2]==='1'?'at-btn':'at-btn2')+'" data-to="'+a[1]+'">'+a[0]+'</button>';}).join('')+'</div>';
+    box.querySelectorAll('button[data-to]').forEach(function(b){b.onclick=function(){advanceReq(r.id,b.getAttribute('data-to'));};});
+  }
+  function advanceReq(id,to){
+    var r=null;REQUESTS.forEach(function(x){if(x.id===id)r=x;});if(!r)return;
+    if(to==='__submit'){to=r.natsub==='Sub-national'?'offline':(reqAbove(r)?'pre_review':'cilt_review');}
+    r.status=to; recompute(); showSec('requests'); openRequest(id); toast('Status updated: '+statusLabel(to));
+  }
+  function moveToCat(r){
+    if(r.moved)return;
+    var v=vendorByName(r.vendor); var gran=granOf(r.dt); var fl=classifyFlags(r.dt,gran); var q=classifyQuality(r.dt,gran);
+    var id='AST-'+(NEXT_AST++);
+    ASSETS.push({id:id,name:r.dn,vid:v?v.id:VENDORS[0].id,ta:r.ta,brand:DIV_BRAND[r.div]||'Cross-brand',ind:'To be completed',quality:q,pii:fl.pii,phi:fl.phi,cost:r.anticipated,contract:'Draft',archetype:r.dt,gran:gran,region:'North America',country:r.country||'United States',cadence:r.cadence,licenses:r.licenses||10,scope:'Full market',owner:'CI '+r.div,usage:'New entry (draft)',lag:'TBC',format:'TBC',origin:'DPRH purchase',draft:true});
+    r.link=id; r.moved=true; recompute(); toast('Created draft '+id+' in the Data Catalogue'); showSec('requests'); openRequest(r.id);
+  }
+  function openRequest(id){CUR_REQ=id;openDrawer(drawerRequest(id));wireRequestDrawer(id);}
+  function wireRequestDrawer(id){
+    var seg=document.getElementById('atRoleSeg');
+    if(seg)seg.querySelectorAll('button').forEach(function(b){b.onclick=function(){setViewRole(b.dataset.role);};});
+    setViewRole(CUR_ROLE||'requester');
+    var wc=document.getElementById('atWriteCat');
+    if(wc)wc.onclick=function(){var r=null;REQUESTS.forEach(function(x){if(x.id===id)r=x;});if(r)moveToCat(r);};
+  }
+  function drawerNewRequest(){
+    var vOpts=VENDORS.map(function(v){return '<option>'+esc(v.name)+'</option>';}).join('');
+    var aOpts=ASSETS.filter(function(a){return !a.draft;}).map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' &mdash; '+esc(VMAP[a.vid].name)+'</option>';}).join('');
+    return '<div class="at-dh"><div><h3>New data request</h3><div class="dsub">CDSP-DPRH &middot; status auto-routes on submit; duplicate-buy detection runs live</div></div>'+dhClose+'</div>'
+     +'<div class="at-dbody"><div class="at-form">'
+     +'<div class="at-field"><label>Submitter</label><input id="nrSub" value="You (CI)"/></div>'
+     +'<div class="at-field"><label>Commercial division</label><select id="nrDiv"><option>Oncology</option><option>Immunology</option><option>Cardiology</option><option>Neurology</option><option>Rare Disease</option><option>Market Access</option></select></div>'
+     +'<div class="at-field"><label>Region type (sets threshold)</label><select id="nrRegion"><option>APUS established</option><option>Global</option><option>China</option><option>International markets</option></select></div>'
+     +'<div class="at-field"><label>National / Sub-national</label><select id="nrNat"><option>National</option><option>Sub-national</option></select></div>'
+     +'<div class="at-field"><label>Purchase type</label><select id="nrType"><option>New Purchase</option><option>Continuing Purchase</option></select></div>'
+     +'<div class="at-field" id="nrAssetWrap" style="display:none"><label>Data being renewed</label><select id="nrAsset"><option value="">Select catalogue asset&hellip;</option>'+aOpts+'</select></div>'
+     +'<div class="at-field full"><label>Data name</label><input id="nrName" placeholder="e.g. National Oncology Claims"/></div>'
+     +'<div class="at-field"><label>Vendor</label><select id="nrVendor"><option value="">Select vendor&hellip;</option>'+vOpts+'</select></div>'
+     +'<div class="at-field"><label>Data type</label><select id="nrDt"><option>Claims (open)</option><option>Claims (closed)</option><option>Prescription (LRx)</option><option>EMR / clinical</option><option>Dispense / hub</option><option>Registry</option><option>Survey / PRO</option><option>Reference / master data</option><option>Payer / access</option><option>Sales / volume</option><option>Market research</option></select></div>'
+     +'<div class="at-field"><label>Anticipated cost (USD)</label><input id="nrCost" placeholder="e.g. 500000"/></div>'
+     +'<div class="at-field"><label>Data cadence</label><select id="nrCad"><option>Monthly</option><option>Weekly</option><option>Quarterly</option><option>Annual</option></select></div>'
+     +'<div class="at-field full"><label>Business rationale</label><textarea id="nrRat" rows="2" placeholder="Why this data is needed&hellip;"></textarea></div>'
+     +'</div>'
+     +'<div class="at-alert" id="nrPreview" style="margin-top:16px"><div class="ah">'+sIco+'<path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>Live routing &amp; checks</div><div class="ad" id="nrPreviewBody">Fill in the fields &mdash; Atlas shows the auto-routed status and flags any duplicate against the catalogue.</div></div>'
+     +'<div class="at-btnrow"><button class="at-btn" id="nrSubmit">Submit request</button><button class="at-btn2" id="nrCancel">Cancel</button></div>'
+     +SRC('CDSP-DPRH','SharePoint','Power Automate','Microsoft Purview')+'</div>';
+  }
+  function nrDup(){var vendor=val('nrVendor'),div=val('nrDiv');var ta=div==='Market Access'?'Cross-brand':div;return ASSETS.filter(function(a){return !a.draft&&VMAP[a.vid]&&VMAP[a.vid].name===vendor&&(a.ta===ta);})[0];}
+  function previewNewReq(){
+    var body=document.getElementById('nrPreviewBody'); if(!body)return;
+    var nat=val('nrNat'),region=val('nrRegion'),cost=parseFloat(val('nrCost'))||0,type=val('nrType');
+    var thr=REGION_THRESH[region]||250000;
+    var routed=nat==='Sub-national'?'Submitted for offline review':(cost>thr?'In data sourcing pre review':'Submitted for CILT review');
+    var msg='Auto-routes to <b>'+routed+'</b> ('+nat+(nat==='National'?', '+(cost>thr?'above':'below')+' '+region+' threshold '+fmtUSD(thr):'')+').';
+    var d=nrDup(); if(type==='New Purchase'&&d){msg+='<br/><span style="color:#C7521A;font-weight:700">Possible duplicate &mdash; overlaps '+d.id+' '+esc(d.name)+' from the same vendor. Review before spend.</span>';}
+    body.innerHTML=msg;
+  }
+  function submitNewRequest(){
+    var name=val('nrName').trim(),vendor=val('nrVendor'),cost=parseFloat(val('nrCost'))||0;
+    if(!name||!vendor||!cost){toast('Enter data name, vendor and anticipated cost');return;}
+    var nat=val('nrNat'),region=val('nrRegion'),div=val('nrDiv'),type=val('nrType'),dt=val('nrDt'),cad=val('nrCad'),rat=val('nrRat').trim();
+    var ta=div==='Market Access'?'Cross-brand':div;
+    var status=nat==='Sub-national'?'offline':((cost>(REGION_THRESH[region]||250000))?'pre_review':'cilt_review');
+    var id='DP-'+(NEXT_DP++);
+    var r={id:id,sub:val('nrSub')||'You (CI)',div:div,ta:ta,subreg:nat==='Sub-national'?'Local':'US',regionType:region,aff:'NovaCura',type:type,exists:type.indexOf('Continuing')>=0?'Yes':'No',dn:name,country:'United States',dt:dt,desc:rat||name,vendor:vendor,natsub:nat,cadence:cad,start:'2026-09-01',expiry:'2028-08-31',rationale:rat||'Submitted via portal',cost:type.indexOf('Continuing')>=0?cost:0,anticipated:cost,licenses:10,status:status};
+    var asel=val('nrAsset'); if(type.indexOf('Continuing')>=0&&asel)r.link=asel;
+    if(type==='New Purchase'){var d=nrDup();if(d)r.dup=d.id;}
+    REQUESTS.unshift(r); CUR_ROLE='requester'; recompute(); toast(id+' created &mdash; '+statusLabel(status)); showSec('requests'); openRequest(id);
+  }
+  function wireNewRequest(){
+    ['nrNat','nrRegion','nrCost','nrVendor','nrDt','nrDiv'].forEach(function(id){var e=document.getElementById(id);if(e){e.onchange=previewNewReq;e.onkeyup=previewNewReq;}});
+    var ty=document.getElementById('nrType'),aw=document.getElementById('nrAssetWrap');
+    if(ty)ty.onchange=function(){if(aw)aw.style.display=ty.value.indexOf('Continuing')>=0?'':'none';previewNewReq();};
+    var as=document.getElementById('nrAsset');
+    if(as)as.onchange=function(){var a=AMAP[as.value];if(a){document.getElementById('nrName').value=a.name;document.getElementById('nrVendor').value=VMAP[a.vid].name;document.getElementById('nrCost').value=a.cost;document.getElementById('nrDt').value=a.archetype;}previewNewReq();};
+    var sb=document.getElementById('nrSubmit');if(sb)sb.onclick=submitNewRequest;
+    var cn=document.getElementById('nrCancel');if(cn)cn.onclick=closeDrawer;
+    previewNewReq();
   }
   function drawerRequest(id){
     var r=null;REQUESTS.forEach(function(x){if(x.id===id)r=x;});if(!r)return '';
@@ -633,7 +738,7 @@
       chainHtml='<div class="at-lin">'+steps.map(function(lab,i){var st,cls;if(r.status==='rejected'&&i>=1){if(i===1){st='Rejected';cls='r';}else{st='Halted';cls='n';}}else{st=i<cur?'Done':i===cur?'Current':'Pending';cls=i<cur?'g':i===cur?'a':'n';}return (i>0?'<span class="lar">&rarr;</span>':'')+'<div class="ln"><div class="lk">Step '+(i+1)+'</div><div class="lv">'+lab+'</div><div class="lm"><span class="at-rag '+cls+'"><span class="rd"></span>'+st+'</span></div></div>';}).join('')+'</div>';
     }
     var seg='<div class="at-btnrow"><div class="at-seg" id="atRoleSeg"><button data-role="requester" class="on">Requester</button><button data-role="admin">Admin</button><button data-role="regional">Regional</button><button data-role="global">Global</button></div><span class="at-mini" id="atRoleHint" style="margin-top:0">Viewing as Requester &mdash; review tabs are role-gated and open progressively. Switch role to reveal.</span></div>';
-    var writeBtn=isApproved(r.status)?'<div class="at-btnrow"><button class="at-btn" id="atWriteCat">Move to Data Catalogue</button><span class="at-mini" style="margin-top:0">Approved &mdash; lands in the Data Catalogue as a <b>draft</b>; an admin completes the remaining fields to publish.</span></div>':'';
+    var writeBtn=isApproved(r.status)?(r.moved?'<div class="at-btnrow"><button class="at-btn2" disabled>Moved to Catalogue &middot; '+esc(r.link)+'</button><span class="at-mini" style="margin-top:0">Draft created &mdash; complete &amp; publish it in the Data Catalogue.</span></div>':'<div class="at-btnrow"><button class="at-btn" id="atWriteCat">Move to Data Catalogue</button><span class="at-mini" style="margin-top:0">Approved &mdash; creates a draft in the Data Catalogue to complete &amp; publish.</span></div>'):'';
     var gNotes=grp('Notes',[row('Requester notes','Raised via the CDSP-DPRH portal; attachments held on the request.',true),row('Latest update','Status: '+statusLabel(r.status)+'.',true)]);
     var gReq=grp('Request &mdash; DPRH',[
       row('Submitter Name',esc(r.sub)),row('Commercial division',r.div),row('Sub Region/Affiliate',r.subreg),row('Affiliate',r.aff),
@@ -693,6 +798,7 @@
     return '<div class="at-dh"><div><h3>'+r.id+' &middot; '+esc(r.dn)+'</h3><div class="dsub">'+esc(r.vendor)+' &middot; '+r.div+' &middot; '+r.natsub+' &middot; '+statusLabel(r.status)+'</div></div>'+dhClose+'</div>'
       +'<div class="at-dbody">'
       +seg
+      +'<div class="at-dgrp" id="atActWrap"><div class="gh">Actions</div><div id="atActions"></div></div>'
       +rejBanner+subBanner+prefill+dupWarn
       +routeCard
       +'<div class="at-dgrp"><div class="gh">Approval chain</div>'+chainHtml+'</div>'
@@ -712,16 +818,13 @@
     d.querySelectorAll('#atRoleSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.role===role);});
     var hint=d.querySelector('#atRoleHint');
     if(hint){var m={requester:'Viewing as Requester &mdash; review tabs are role-gated and open progressively. Switch role to reveal.',admin:'Viewing as Admin &mdash; you can see and set status across admin, regional and final review.',regional:'Viewing as Regional reviewer &mdash; your region-scoped review and the CDS committee tab are visible.',global:'Viewing as Global reviewer &mdash; the CDS committee review is visible.'};hint.innerHTML=m[role]||'';}
+    CUR_ROLE=role;var rq=null;REQUESTS.forEach(function(x){if(x.id===CUR_REQ)rq=x;});if(rq&&document.getElementById('atActions'))renderActions(rq,role);
   }
 
   function wireRequests(){
-    document.querySelectorAll('#atApp [data-req]').forEach(function(tr){tr.onclick=function(){
-      openDrawer(drawerRequest(tr.getAttribute('data-req')));
-      var seg=document.getElementById('atRoleSeg');
-      if(seg){seg.querySelectorAll('button').forEach(function(b){b.onclick=function(){setViewRole(b.dataset.role);};});setViewRole('requester');}
-      var wc=document.getElementById('atWriteCat');
-      if(wc)wc.onclick=function(){toast('Moved to Data Catalogue as a draft (AST-1013) &mdash; complete it in the Catalogue to publish');wc.disabled=true;wc.textContent='Moved to Catalogue (draft)';wc.classList.remove('at-btn');wc.classList.add('at-btn2');};
-    };});
+    document.querySelectorAll('#atApp [data-req]').forEach(function(tr){tr.onclick=function(){CUR_ROLE='requester';openRequest(tr.getAttribute('data-req'));};});
+    var nb=document.getElementById('atNewReq');
+    if(nb)nb.onclick=function(){openDrawer(drawerNewRequest());wireNewRequest();};
   }
 
   /* ===== SECTION: Data Catalogue ===== */
@@ -746,10 +849,10 @@
     if(!rows.length)tbl+='<tr><td colspan="7"><div class="at-empty">No assets in this division.</div></td></tr>';
     rows.forEach(function(a){
       var sens=(a.phi?'<span class="pill hi">PHI</span> ':'')+(a.pii?'<span class="pill md">PII</span>':'')||'<span class="pill gy">None</span>';
-      tbl+='<tr class="click" data-asset="'+a.id+'"><td><b>'+a.id+'</b><div class="at-mini" style="margin-top:2px">'+esc(a.name)+'</div></td><td>'+esc(VMAP[a.vid].name)+'</td><td>'+a.ta+'<div class="at-mini" style="margin-top:2px">'+a.brand+'</div></td><td>'+tierPill(a.quality)+'</td><td>'+sens+'</td><td class="num">'+fmtUSD(a.cost)+'</td><td>'+a.cadence+'</td></tr>';
+      tbl+='<tr class="click" data-asset="'+a.id+'"><td><b>'+a.id+'</b>'+(a.draft?' <span class="pill md">Draft</span>':'')+'<div class="at-mini" style="margin-top:2px">'+esc(a.name)+'</div></td><td>'+esc(VMAP[a.vid].name)+'</td><td>'+a.ta+'<div class="at-mini" style="margin-top:2px">'+a.brand+'</div></td><td>'+tierPill(a.quality)+'</td><td>'+sens+'</td><td class="num">'+fmtUSD(a.cost)+'</td><td>'+a.cadence+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>Data Catalogue</h2><p>The central record of every data asset NovaCura has purchased &mdash; the system of record everything else links to. Anyone can reference it to see what already exists and avoid duplication. Entries arrive from an approved request, a renewal read-back, or a manual entry.</p></div>'+layerRail(['Full asset record','Gold / Silver / Bronze','PII / PHI flags','Three entry routes'],['PII/PHI auto-classification','Approved-request sync','Renewal read-back'],['Quality-risk flags (AI)','Overlap detection','Quality dashboard','Ask Atlas','Lineage cross-links'])
+    return '<div class="dx-sech"><h2>Data Catalogue</h2><p>The central record of every data asset NovaCura has purchased &mdash; the system of record everything else links to. Anyone can reference it to see what already exists and avoid duplication. Entries arrive from an approved request, a renewal read-back, or a manual entry.</p></div>'
       +'<div class="dx-card" style="margin-bottom:16px"><div class="at-btnrow" style="margin-top:0;justify-content:space-between"><div><h3 style="font-size:15px;font-weight:700">Add to catalogue</h3><div class="sub" style="font-size:12px;color:var(--text-2);margin-top:2px">Manual entry with automatic PII/PHI classification and a quality suggestion</div></div><button class="at-btn" id="atNewAsset">New manual entry</button></div></div>'
       +kpis
       +'<div class="dx-grid dx-g23" style="margin-bottom:16px"><div class="dx-card"><div class="dx-cardh"><div><h3>Quality distribution</h3><div class="sub">Gold / Silver / Bronze across the catalogue</div></div></div>'+dn+SRC('Data Catalogue','Microsoft Purview')+'</div><div class="dx-card">'+flagCard+SRC('Data Catalogue','KPI Catalogue')+'</div></div>'
@@ -802,8 +905,10 @@
     ]);
     return '<div class="at-dh"><div><h3>'+a.id+' &middot; '+esc(a.name)+'</h3><div class="dsub">'+esc(v.name)+' &middot; '+a.ta+' / '+a.brand+' &middot; '+tierPill(a.quality)+'</div></div>'+dhClose+'</div>'
       +'<div class="at-dbody">'
+      +(a.draft?'<div class="at-alert" style="margin-bottom:14px"><div class="ah">'+sIco+'<path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>Draft &mdash; created from an approved request</div><div class="ad">Complete the remaining fields and publish to add it to the live catalogue, KPI lineage and vendor rollups.</div></div>':'')
       +'<div class="at-dgrp"><div class="gh">Lineage</div>'+lin+'</div>'
       +gId+gCls+gCov+gQ+gComm+gAcc
+      +(a.draft?'<div class="at-btnrow"><button class="at-btn" id="atPublish">Complete &amp; publish</button><span class="at-mini" style="margin-top:0">Adds this draft to the live catalogue, KPI lineage and vendor rollups.</span></div>':'')
       +SRC('Data Catalogue','Microsoft Purview','Databricks','Model N')
       +'</div>';
   }
@@ -834,14 +939,23 @@
     var qual=(arch==='Claims (closed)'||arch==='Prescription (LRx)'||arch==='Dispense / hub')&&gran==='Patient-level'?'Gold':(arch==='Survey / PRO'||arch==='Registry'||gran==='Territory-level')?'Bronze':'Silver';
     body.innerHTML='Detected <b>PHI: '+(phi?'Yes':'No')+'</b> &middot; <b>PII: '+(pii?'Yes':'No')+'</b> from '+gran.toLowerCase()+' / '+arch.toLowerCase()+'. Suggested quality tier: '+tierPill(qual)+'. '+(phi?'PHI handling controls will be applied automatically.':pii?'PII access controls will be applied.':'No personal-data controls required.');
   }
+  function submitNewAsset(){
+    var name=val('naName').trim(); if(!name){toast('Enter a data asset name');return;}
+    var v=vendorByName(val('naVendor')),ta=val('naTa'),arch=val('naArch'),gran=val('naGran'),cost=parseFloat(val('naCost'))||0,origin=val('naOrigin');
+    var fl=classifyFlags(arch,gran), q=classifyQuality(arch,gran), id='AST-'+(NEXT_AST++);
+    ASSETS.push({id:id,name:name,vid:v?v.id:VENDORS[0].id,ta:ta,brand:DIV_BRAND[ta]||'Cross-brand',ind:'Manual entry',quality:q,pii:fl.pii,phi:fl.phi,cost:cost,contract:'Active',archetype:arch,gran:gran,region:'North America',country:'United States',cadence:'Monthly',licenses:10,scope:'Full market',owner:'CI '+ta,usage:'New entry',lag:'TBC',format:'TBC',origin:origin});
+    recompute(); toast('Saved '+id+' to the Data Catalogue'); closeDrawer(); showSec('catalogue');
+  }
+  function publishAsset(id){var a=AMAP[id];if(!a)return;a.draft=false;a.contract='Active';a.usage='Newly published';recompute();toast(id+' published to the catalogue');showSec('catalogue');openAsset(id);}
+  function openAsset(id){openDrawer(drawerAsset(id));var pb=document.getElementById('atPublish');if(pb)pb.onclick=function(){publishAsset(id);};}
   function wireCatalogue(){
-    document.querySelectorAll('#atApp [data-asset]').forEach(function(tr){tr.onclick=function(){openDrawer(drawerAsset(tr.getAttribute('data-asset')));};});
+    document.querySelectorAll('#atApp [data-asset]').forEach(function(tr){tr.onclick=function(){openAsset(tr.getAttribute('data-asset'));};});
     var nb=document.getElementById('atNewAsset');
     if(nb)nb.onclick=function(){
       openDrawer(drawerNewAsset());
       ['naGran','naArch','naOrigin'].forEach(function(id){var e=document.getElementById(id);if(e)e.onchange=classifyNew;});
       classifyNew();
-      var sv=document.getElementById('naSave');if(sv)sv.onclick=function(){var nm=(document.getElementById('naName')||{}).value||'New asset';toast('Saved to Catalogue as AST-1013 &mdash; '+nm);closeDrawer();};
+      var sv=document.getElementById('naSave');if(sv)sv.onclick=submitNewAsset;
       var cn=document.getElementById('naCancel');if(cn)cn.onclick=closeDrawer;
     };
   }
@@ -867,7 +981,8 @@
       tbl+='<tr class="click" data-kpi="'+k.id+'"><td><b>'+esc(k.name)+'</b>'+(k.retired?' <span class="pill gy">retired</span>':'')+(risk?' <span class="at-flag">'+sIco+'<path d="M4 15V3M4 3h11l-2 4 2 4H4"/></svg>quality</span>':'')+'<div class="at-mini" style="margin-top:2px">'+k.id+'</div></td><td>'+k.type+'</td><td>'+(k.scope==='Global'?'<span class="pill bl">Global</span>':k.scope==='Regional'?'<span class="pill md">Regional</span>':'<span class="pill gy">Local</span>')+'</td><td>'+k.brand+'</td><td>'+k.src.map(function(id){return id;}).join(', ')+'</td><td>'+k.cadence+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>KPI Catalogue</h2><p>The registry of KPIs and metrics built on purchased data. Each KPI records its definition, methodology, market definition, cadence, deliverables, contacts &mdash; and the source asset it depends on, linking every metric back to the Data Catalogue.</p></div>'+layerRail(['Full KPI metadata','Source link','Lifecycle / retire'],['Lineage auto-resolve','Retirement propagation'],['Source quality-risk (AI)','Impact analysis','Scope dashboard','Ask Atlas','Asset & vendor lineage'])
+    return '<div class="dx-sech"><h2>KPI Catalogue</h2><p>The registry of KPIs and metrics built on purchased data. Each KPI records its definition, methodology, market definition, cadence, deliverables, contacts &mdash; and the source asset it depends on, linking every metric back to the Data Catalogue.</p></div>'
+      +'<div class="at-btnrow" style="margin:0 0 16px"><button class="at-btn" id="atNewKpi">Add KPI / metric</button><span class="at-mini" style="margin-top:0">Define a metric and link its source asset &mdash; lineage and source quality-risk compute automatically.</span></div>'
       +kpis
       +(riskKpis.length?'<div style="margin-bottom:16px">'+aiCard('Source quality risk','One or more Global KPIs draw on a Bronze-tier asset &mdash; treat outputs as directional and review before external use. Flagged rows are marked below.','High','KPI scope cross-referenced with source-asset quality',true)+'</div>':'')+'<div class="dx-card"><div class="dx-cardh"><div><h3>KPIs &amp; metrics</h3><div class="sub">Click a row for full metadata and the asset/vendor lineage</div></div></div>'+tbl+adv('High','lineage resolved from each KPI&rsquo;s data-source link to catalogue assets')+SRC('KPI Catalogue','Data Catalogue','Microsoft Purview')+'</div>';
   }
@@ -917,7 +1032,40 @@
       +SRC('KPI Catalogue','Data Catalogue','Microsoft Purview')
       +'</div>';
   }
-  function wireKpis(){document.querySelectorAll('#atApp [data-kpi]').forEach(function(tr){tr.onclick=function(){openDrawer(drawerKpi(tr.getAttribute('data-kpi')));};});}
+  function drawerNewKpi(){
+    var aOpts=ASSETS.filter(function(a){return !a.draft;}).map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.quality+')</option>';}).join('');
+    return '<div class="at-dh"><div><h3>Add KPI / metric</h3><div class="dsub">KPI Catalogue &middot; links to a source asset; lineage and quality-risk compute live</div></div>'+dhClose+'</div>'
+     +'<div class="at-dbody"><div class="at-form">'
+     +'<div class="at-field full"><label>KPI / metric name</label><input id="nkName" placeholder="e.g. New Patient Share"/></div>'
+     +'<div class="at-field"><label>KPI or Metric?</label><select id="nkType"><option>KPI</option><option>Metric</option></select></div>'
+     +'<div class="at-field"><label>Scope</label><select id="nkScope"><option>Global</option><option>Regional</option><option>Local</option></select></div>'
+     +'<div class="at-field"><label>Brand</label><select id="nkBrand"><option>OncoNova</option><option>Immunexa</option><option>CardioZen</option><option>Neurovia</option><option>RareGene</option><option>Cross-brand</option></select></div>'
+     +'<div class="at-field"><label>Source asset</label><select id="nkSrc">'+aOpts+'</select></div>'
+     +'<div class="at-field"><label>Cadence</label><select id="nkCad"><option>Monthly</option><option>Quarterly</option><option>Annual</option></select></div>'
+     +'<div class="at-field full"><label>Description</label><textarea id="nkDesc" rows="2" placeholder="What it measures&hellip;"></textarea></div>'
+     +'</div>'
+     +'<div class="at-alert" id="nkPrev" style="margin-top:16px"><div class="ah">'+sIco+'<path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>Live lineage check</div><div class="ad" id="nkPrevBody">Pick a source asset &mdash; Atlas resolves the vendor lineage and flags any quality risk.</div></div>'
+     +'<div class="at-btnrow"><button class="at-btn" id="nkSubmit">Add to KPI Catalogue</button><button class="at-btn2" id="nkCancel">Cancel</button></div>'
+     +SRC('KPI Catalogue','Data Catalogue','Microsoft Purview')+'</div>';
+  }
+  function nkPreview(){
+    var body=document.getElementById('nkPrevBody'); if(!body)return;
+    var a=AMAP[val('nkSrc')], scope=val('nkScope'); if(!a){body.innerHTML='Select a source asset.';return;}
+    var msg='Lineage: <b>'+esc(a.name)+'</b> ('+a.quality+') &larr; <b>'+esc(VMAP[a.vid].name)+'</b>.';
+    if(scope==='Global'&&a.quality==='Bronze')msg+='<br/><span style="color:#C7521A;font-weight:700">Quality risk: a Global KPI on a Bronze-tier asset &mdash; outputs will be flagged as directional.</span>';
+    body.innerHTML=msg;
+  }
+  function submitNewKpi(){
+    var name=val('nkName').trim(), src=val('nkSrc'); if(!name||!src){toast('Enter a name and pick a source asset');return;}
+    var a=AMAP[src]; var id='KPI-'+(NEXT_KPI++<10?'0':'')+(NEXT_KPI-1);
+    KPIS.unshift({id:id,name:name,type:val('nkType'),scope:val('nkScope'),brand:val('nkBrand'),ta:a?a.ta:'Cross-brand',ind:a?a.ind:'Multi',src:[src],cadence:val('nkCad'),fy:'FY26',internal:'External',method:'Defined via portal',market:'To be specified',deliv:val('nkName')+' deliverable',contact:'You (CI)',contactfn:'Insights',retired:false});
+    recompute(); toast(id+' added to the KPI Catalogue'); closeDrawer(); showSec('kpis');
+  }
+  function wireKpis(){
+    document.querySelectorAll('#atApp [data-kpi]').forEach(function(tr){tr.onclick=function(){openDrawer(drawerKpi(tr.getAttribute('data-kpi')));};});
+    var nb=document.getElementById('atNewKpi');
+    if(nb)nb.onclick=function(){openDrawer(drawerNewKpi());['nkSrc','nkScope'].forEach(function(id){var e=document.getElementById(id);if(e)e.onchange=nkPreview;});nkPreview();var sb=document.getElementById('nkSubmit');if(sb)sb.onclick=submitNewKpi;var cn=document.getElementById('nkCancel');if(cn)cn.onclick=closeDrawer;};
+  }
 
   /* ===== SECTION: Vendor Hub ===== */
   function secVendors(){
@@ -935,7 +1083,7 @@
       tbl+='<tr class="click" data-vendor="'+v.id+'"><td><b>'+esc(v.name)+'</b><div class="at-mini" style="margin-top:2px">'+v.rel+' &middot; '+v.country+'</div></td><td>'+esc(v.desc)+'</td><td class="num">'+r.purchased+' / '+v.offers+'</td><td>'+(r.mix.Gold?'<span class="at-tier gold">'+r.mix.Gold+'G</span> ':'')+(r.mix.Silver?'<span class="at-tier silver">'+r.mix.Silver+'S</span> ':'')+(r.mix.Bronze?'<span class="at-tier bronze">'+r.mix.Bronze+'B</span>':'')+'</td><td class="num">'+fmtUSD(r.spend)+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>Vendor Hub</h2><p>The vendor inventory: who our data vendors are, what data they hold, and what we have purchased versus what is still available. A vendor-centric view of the estate &mdash; the foundation the Vendor Hub Plus value layer rolls up from.</p></div>'+layerRail(['Vendor inventory','Purchased vs available','Access & guidance'],['Asset-to-vendor rollup','Spend aggregation'],['Vendor Hub Plus (AI)','Concentration / HHI','Value dashboard','Ask Atlas','Asset & KPI cross-links'])
+    return '<div class="dx-sech"><h2>Vendor Hub</h2><p>The vendor inventory: who our data vendors are, what data they hold, and what we have purchased versus what is still available. A vendor-centric view of the estate &mdash; the foundation the Vendor Hub Plus value layer rolls up from.</p></div>'
       +kpis
       +'<div class="dx-card" style="margin-bottom:16px"><div class="at-btnrow" style="margin-top:0;justify-content:space-between;align-items:center"><div><h3 style="font-size:15px;font-weight:700">Vendor value intelligence</h3><div style="font-size:12px;color:var(--text-2);margin-top:2px">Quality, concentration, irreplaceability, cost-per-quality and leverage roll up in Vendor Hub Plus</div></div><button class="at-btn2" data-go="vendorplus">Open Vendor Hub Plus</button></div></div>'
       +'<div class="dx-card"><div class="dx-cardh"><div><h3>Vendors</h3><div class="sub">Click a vendor for what they hold and how to access it</div></div></div>'+tbl+SRC('Vendor Hub','SharePoint','Veeva CRM')+'</div>';
@@ -1053,7 +1201,7 @@
       tbl+='<tr class="click" data-tpa="'+t.id+'"><td><b>'+t.no+'</b><div class="at-mini" style="margin-top:2px">'+t.id+'</div></td><td>'+esc(VMAP[t.vid].name)+'</td><td>'+(a?esc(a.name):'&mdash;')+'<div class="at-mini" style="margin-top:2px">'+t.brand+'</div></td><td class="num">'+t.expiry+'</td><td><span class="at-rag '+ragDays(d)+'"><span class="rd"></span>'+d+'d</span></td><td>'+reminderChips(d)+'</td><td>'+(pr.p==='High'?'<span class="pill lo">Renew &middot; High</span>':pr.p==='Low'?'<span class="pill hi">Review &middot; Low</span>':'<span class="pill md">Renew &middot; Med</span>')+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>TPA Hub</h2><p>The third-party agreement register, with the 30/60/90-day expiry reminder engine running on every record. Both a system of record and an active reminder service &mdash; and, layered on top, renewal prediction and cross-tool warnings when an expiring agreement sits behind a strategic KPI.</p></div>'+layerRail(['Agreement register','Signatories & scope','Permitted use'],['30/60/90 reminders','Owner escalation','Email notifications'],['Renewal prediction (AI)','KPI-impact warning','Runway dashboard','Ask Atlas','Vendor & asset cross-links'])
+    return '<div class="dx-sech"><h2>TPA Hub</h2><p>The third-party agreement register, with the 30/60/90-day expiry reminder engine running on every record. Both a system of record and an active reminder service &mdash; and, layered on top, renewal prediction and cross-tool warnings when an expiring agreement sits behind a strategic KPI.</p></div>'
       +kpis
       +'<div class="dx-card" style="margin-bottom:16px"><div class="dx-cardh"><div><h3>Expiry runway</h3><div class="sub">Reminders fire automatically at 90, 60 and 30 days; &le; 30 days escalates to the owner</div></div></div>'+runway+SRC('TPA Hub','Power Automate','SharePoint')+'</div>'
       +'<div class="dx-card" style="margin-bottom:16px">'+warnCard+SRC('TPA Hub','KPI Catalogue','Data Catalogue')+'</div>'
@@ -1104,15 +1252,27 @@
       +'<div class="at-dgrp"><div class="gh">Lineage</div>'+lin+'</div>'
       +renewCard+timeline
       +gAgr+gVen+gScope+gTp+gDates+gOwn
+      +'<div class="at-btnrow"><button class="at-btn" id="atTpaRenew" data-tpa-renew="'+t.id+'">Create renewal request</button><span class="at-mini" style="margin-top:0">Raises a continuing-purchase request in DPRH, pre-filled from this agreement and its asset.</span></div>'
       +SRC('TPA Hub','SharePoint','Power Automate','Microsoft Purview')
       +'</div>';
   }
-  function wireTpa(){document.querySelectorAll('#atApp [data-tpa]').forEach(function(tr){tr.onclick=function(){openDrawer(drawerTpa(tr.getAttribute('data-tpa')));};});}
+  function createRenewalFromTpa(tid){
+    var t=null;TPAS.forEach(function(x){if(x.id===tid)t=x;});if(!t)return;
+    var a=AMAP[t.assets[0]]; var v=VMAP[t.vid];
+    var cost=a?a.cost:300000; var status=(cost>250000)?'pre_review':'cilt_review';
+    var id='DP-'+(NEXT_DP++);
+    REQUESTS.unshift({id:id,sub:'You (CI)',div:(a?a.owner.replace('CI ',''):'Market Access'),ta:a?a.ta:t.brand,subreg:'US',regionType:'APUS established',aff:'NovaCura',type:'Continuing Purchase',exists:'Yes',dn:(a?a.name:t.brand+' data'),country:a?a.country:'United States',dt:a?a.archetype:'Claims (open)',desc:'Renewal raised from agreement '+t.no,vendor:v?v.name:'',natsub:'National',cadence:a?a.cadence:'Monthly',start:'2026-09-01',expiry:'2028-08-31',rationale:'Renewal of '+(a?a.name:t.brand)+' ahead of TPA expiry '+t.expiry,cost:cost,anticipated:Math.round(cost*1.05),licenses:a?a.licenses:10,status:status,link:a?a.id:undefined});
+    CUR_ROLE='requester'; recompute(); toast('Renewal request '+id+' created from '+t.no); showSec('requests'); openRequest(id);
+  }
+  function wireTpa(){
+    document.querySelectorAll('#atApp [data-tpa]').forEach(function(tr){tr.onclick=function(){openDrawer(drawerTpa(tr.getAttribute('data-tpa')));var rb=document.getElementById('atTpaRenew');if(rb)rb.onclick=function(){createRenewalFromTpa(rb.getAttribute('data-tpa-renew'));};};});
+  }
 
   /* ===== render / nav / wiring ===== */
   var RENDER={overview:secOverview,requests:secRequests,catalogue:secCatalogue,kpis:secKpis,vendors:secVendors,tpa:secTpa,vendorplus:secVendorPlus};
   var CUR='overview';
   function renderSec(id){
+    recompute();
     var el=document.querySelector('#atApp .dx-sec[data-sec="'+id+'"]');
     el.innerHTML=RENDER[id]();
     wireAsk();wireLinks();
