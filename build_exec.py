@@ -128,19 +128,19 @@ notes(s,"The mental model. Trace one asset end to end out loud to make the flow 
 
 # ---------- 4 Platform at a glance
 s=slide(); bg(s,SURFACE)
-header(s,"Inside the platform","Five tools, each carrying its own automation and intelligence")
-rows=[("1","Data Requests (DPRH)","Combined, role-gated request form and approval chain.","Duplicate-buy detection · catalogue sync"),
- ("2","Data Catalogue","The system of record — full asset profile, quality, sensitivity.","PII/PHI auto-classification · quality flags"),
- ("3","KPI Catalogue","Every metric, with lineage back to its source asset.","Quality-risk on strategic KPIs"),
- ("4","Vendor Hub","Vendor inventory — what they hold, purchased vs available.","Foundation for the value layer"),
- ("5","TPA Hub","Agreement register with a live expiry engine.","30/60/90 reminders · renewal prediction")]
+header(s,"Inside the platform","Every tool keeps its as-is job and now carries automation, intelligence, dashboards and Ask Atlas")
+rows=[("1","Data Requests (DPRH)","Status-driven, role-gated form; auto-routed on submit.","Auto-status · duplicate detection (AI) · dashboard · Ask Atlas"),
+ ("2","Data Catalogue","System of record — asset profile, quality, sensitivity.","PII/PHI auto-classify · quality flags (AI) · Ask Atlas"),
+ ("3","KPI Catalogue","Every metric, with lineage to its source asset.","Lineage auto-resolve · source quality-risk (AI) · Ask Atlas"),
+ ("4","Vendor Hub","Vendor inventory — purchased vs available.","Rollups · Vendor Hub Plus value & HHI (AI) · Ask Atlas"),
+ ("5","TPA Hub","Agreement register with a live expiry engine.","30/60/90 reminders · renewal prediction (AI) · dashboard")]
 y=Inches(1.95); rh=Inches(0.94)
 for i,(n,tl,ds,tag) in enumerate(rows):
     yy=y+i*rh; card(s,MX,yy,CW,Inches(0.82))
     badge(s,MX+Inches(0.2),yy+Inches(0.21),n,d=Inches(0.42))
-    t=tb(s,MX+Inches(0.85),yy+Inches(0.13),Inches(3.7),Inches(0.6),anchor=MSO_ANCHOR.MIDDLE); par(t,tl,14.5,True,INK,first=True,after=0)
-    t2=tb(s,MX+Inches(4.6),yy+Inches(0.13),Inches(4.0),Inches(0.6),anchor=MSO_ANCHOR.MIDDLE); par(t2,ds,11.5,False,TEXT2,first=True,after=0)
-    t3=tb(s,MX+Inches(8.7),yy+Inches(0.13),Inches(3.0),Inches(0.6),anchor=MSO_ANCHOR.MIDDLE); par(t3,tag,10.5,True,ORANGE_D,first=True,after=0)
+    t=tb(s,MX+Inches(0.85),yy+Inches(0.11),Inches(3.4),Inches(0.62),anchor=MSO_ANCHOR.MIDDLE); par(t,tl,13.5,True,INK,first=True,after=0)
+    t2=tb(s,MX+Inches(4.3),yy+Inches(0.11),Inches(3.5),Inches(0.62),anchor=MSO_ANCHOR.MIDDLE); par(t2,ds,10.8,False,TEXT2,first=True,after=0)
+    t3=tb(s,MX+Inches(7.95),yy+Inches(0.11),Inches(3.85),Inches(0.62),anchor=MSO_ANCHOR.MIDDLE); par(t3,tag,9.5,True,ORANGE_D,first=True,after=0)
 footer(s,pg())
 notes(s,"The whole platform on one slide. Read down the left for the lifecycle of an asset; the right column shows the automation/intelligence each tool carries. If you're demoing live, this is your map before you click in. Keep it to a minute and move to the differentiator.")
 

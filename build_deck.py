@@ -348,12 +348,12 @@ def module_slide(kicker, title, sub, features, surfaces=None, feeds=None):
 
 s=module_slide("Tool 1 — Workflow","Data Requests (DPRH)",
   "One combined, role-gated form governs every data buy before money is committed.",
-  [("1","Role-gated approval","A single form raises the request; reviewers see only their section. Routes Requester → Regional + Admin → Committee → Admin final, by national/sub-national scope and cost threshold."),
-   ("2","Automation built in","On renewal the form pre-fills from the catalogue; once purchased, one click writes every field back into the catalogue — no re-keying, no drift."),
+  [("1","Status-driven & role-gated","Status is set automatically on submit from national/sub-national + cost threshold (e.g. National above → In data sourcing pre review). Reviewer tabs open progressively: Admin → Regional (region-scoped) → CDS committee (regional + global) → Admin final."),
+   ("2","Automation built in","Renewals pre-fill from the catalogue; on approval, Move to Catalogue lands the record there as a draft to complete — no re-keying, no drift. Power Automate notifications throughout."),
    ("3","Duplicate-buy detection","At intake, Atlas matches the request against the catalogue on vendor, therapeutic area and data type — and flags overlap before spend."),],
   surfaces="2 in-flight requests flagged as overlapping data already owned — roughly $1.09M of exposure to review before approval.",
   feeds=["SharePoint","Power Automate","Veeva CRM"])
-notes(s, "This is the front door — the highest-value place to stop waste, because it's before the money is spent. Three things to land: (1) the role-gating means one form, not a relay of emails, and each persona sees only what they should — demo the Requester/Regional/Committee/Admin toggle. (2) The two automations kill the re-keying that causes catalogue drift today. (3) The duplicate flag is the headline — show DP-2042 overlapping the existing Oncology EMR asset. That one flag can pay for the platform. Reinforce: the flag is advisory; a human decides.")
+notes(s, "This is the front door — the highest-value place to stop waste, because it's before the money is spent. Land three things: (1) the form is status-driven — on submit it auto-routes by national/sub-national and the divisional cost threshold, and each reviewer tab (Admin, region-scoped Regional, CDS committee of regional+global reviewers, Admin final) opens progressively and is visible only to that role — demo the Requester/Admin/Regional/Global toggle. (2) Automation kills the re-keying that causes catalogue drift; on approval the record moves to the catalogue as a draft to complete. (3) The duplicate flag is the headline — show DP-2042 overlapping the existing Oncology EMR asset. That one flag can pay for the platform. The flag is advisory; a human decides. (This mirrors the live CDSP-DPRH portal.)")
 
 # ============================================================ 11 Module: Catalogue
 s=module_slide("Tool 2 — System of record","Data Catalogue",
@@ -422,7 +422,35 @@ s=module_slide("Tool 5 — Continuous control","TPA Hub",
   feeds=["SharePoint","Power Automate","Microsoft Purview"])
 notes(s, "This is the tool with the clearest, most defensible ROI because the reminder automation already exists in their world — we're making it intelligent. The leap from today: today a reminder says 'TPA expires in 30 days.' Atlas says 'this expires in 21 days AND it's the only agreement feeding your New-to-Brand Rx Share KPI for OncoNova — renew now.' That's continuous, risk-tiered monitoring, the direction third-party-risk tooling has gone. Show the runway view and the red cross-tool warning. Renewal prediction is advisory — a recommendation, not an auto-renew.")
 
-# ============================================================ 16 Decision layer: signals + Ask
+# ============================================================ Enhancements matrix (all tools)
+s=slide(); bg(s, SURFACE)
+header(s, "Enhancements", "Automation and intelligence — built into every tool")
+ORANGE_D=RGBColor(0x9a,0x5c,0x12)
+colA=MX+Inches(2.55); colI=MX+Inches(7.3); wA=Inches(4.6); wI=Inches(4.6)
+th=tb(s, MX, Inches(1.92), Inches(2.5), Inches(0.3)); par(th,"TOOL",10.5,True,TEXT2,first=True,after=0)
+th2=tb(s, colA, Inches(1.92), wA, Inches(0.3)); par(th2,"AUTOMATION (Layer 2)",10.5,True,BLUE,first=True,after=0)
+th3=tb(s, colI, Inches(1.92), wI, Inches(0.3)); par(th3,"INTELLIGENCE & NEXT-GEN (Layer 3)",10.5,True,ORANGE_D,first=True,after=0)
+rowsM=[
+ ("Data Requests","Auto-status routing · renewal pre-fill · move-to-catalogue (draft) · Power Automate alerts","Duplicate-buy detection · approval-likelihood · status dashboard · Ask Atlas"),
+ ("Data Catalogue","PII/PHI auto-classification · approved-request sync · renewal read-back","Quality-risk flags · overlap detection · quality dashboard · Ask Atlas"),
+ ("KPI Catalogue","Lineage auto-resolve · retirement propagation","Source quality-risk · impact analysis · scope dashboard · Ask Atlas"),
+ ("Vendor Hub","Asset-to-vendor rollup · spend aggregation","Vendor Hub Plus: value, HHI, irreplaceability, leverage · Ask Atlas"),
+ ("TPA Hub","30/60/90 reminders · owner escalation · email notifications","Renewal prediction · KPI-impact warning · runway dashboard · Ask Atlas"),
+]
+y=Inches(2.32); rh=Inches(0.82)
+for i,(t,a,intel) in enumerate(rowsM):
+    yy=y+i*rh
+    card(s, MX, yy, Inches(12.0), Inches(0.72))
+    rect(s, MX, yy, Inches(0.1), Inches(0.72), fill=ORANGE, shape=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+    tt=tb(s, MX+Inches(0.24), yy+Inches(0.08), Inches(2.3), Inches(0.58), anchor=MSO_ANCHOR.MIDDLE); par(tt,t,12.5,True,INK,first=True,after=0)
+    ta=tb(s, colA, yy+Inches(0.08), wA, Inches(0.58), anchor=MSO_ANCHOR.MIDDLE); par(ta,a,10.3,False,TEXT2,first=True,after=0)
+    ti=tb(s, colI, yy+Inches(0.08), wI, Inches(0.58), anchor=MSO_ANCHOR.MIDDLE); par(ti,intel,10.3,False,TEXT2,first=True,after=0)
+t=tb(s, MX, Inches(6.5), CW, Inches(0.5))
+par(t,"Cross-connectivity throughout: every record links to its related asset, KPI, vendor and agreement; Ask Atlas spans all five; one connected dashboard layer.",12,True,INK,first=True,after=0)
+footer(s, pg())
+notes(s, "This is the slide that answers 'what have you enhanced?' across the board. Read it as: every one of the five tools keeps its as-is job (Layer 1) and now carries Layer 2 automation and Layer 3 intelligence — not just one or two tools. Point out the consistent pattern: each has automation that removes manual effort, an AI/analytics capability, a dashboard view, and Ask Atlas. The bottom line is the next-gen integration story — cross-connectivity between tools, a unified dashboard layer, and AI (Azure OpenAI) woven in. Reassure: every AI output stays advisory with a human in the loop.")
+
+# ============================================================ Decision layer: signals + Ask
 s=slide(); bg(s, SURFACE)
 header(s, "The decision layer", "Cross-tool intelligence and a natural-language ask")
 # left: signals

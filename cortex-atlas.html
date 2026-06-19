@@ -113,6 +113,21 @@
   .golink{color:#0563C1;font-weight:700;cursor:pointer}.golink:hover{text-decoration:underline}
 
   /* ===== Atlas module CSS (prefixed at-, scoped under #atApp) ===== */
+  #atApp .at-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+  #atApp .at-lane{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  #atApp .at-lane .lh{font:700 10px var(--display);letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:9px}
+  #atApp .at-lane .lh .ld2{width:9px;height:9px;border-radius:3px;flex:none}
+  #atApp .at-lane.asis .lh{color:#5b6068}
+  #atApp .at-lane.asis .lh .ld2{background:#8B8B8B}
+  #atApp .at-lane.auto .lh{color:#0563C1}
+  #atApp .at-lane.auto .lh .ld2{background:#0563C1}
+  #atApp .at-lane.intel .lh{color:#9a5c12}
+  #atApp .at-lane.intel .lh .ld2{background:#F89739}
+  #atApp .at-lane .lc{display:flex;flex-wrap:wrap;gap:6px}
+  #atApp .at-lane .lc span{font:600 11px var(--display);padding:4px 9px;border-radius:6px;background:#F7F8FA;color:#3F3F3F;border:1px solid var(--line)}
+  #atApp .at-lane.auto .lc span{background:rgba(5,99,193,.06);border-color:rgba(5,99,193,.25)}
+  #atApp .at-lane.intel .lc span{background:rgba(248,151,57,.08);border-color:rgba(248,151,57,.3)}
+  @media(max-width:1080px){#atApp .at-rail{grid-template-columns:1fr}}
   #atApp .at-rag{font:700 10.5px var(--display);padding:3px 9px 3px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
   #atApp .at-rag .rd{width:7px;height:7px;border-radius:50%;background:currentColor}
   #atApp .at-rag.g{background:#EAF3EC;color:#1E7F4F}
@@ -256,6 +271,15 @@
   function tierPill(q){return '<span class="at-tier '+tierCls(q)+'"><span class="td"></span>'+q+'</span>';}
   /* advisory cue line (every AI / insight block carries this) */
   function adv(level,basis,amber){return '<div class="at-adv'+(amber?' amber':'')+'">Confidence: '+level+' &middot; '+basis+' <span class="hum">&middot; Advisory only &mdash; a human approves any action</span></div>';}
+  /* three-layer enhancement rail (As-is / Automation / Intelligence) shown on every tool */
+  function layerRail(asis,auto,intel){
+    function lane(cls,label,items){return '<div class="at-lane '+cls+'"><div class="lh"><span class="ld2"></span>'+label+'</div><div class="lc">'+items.map(function(x){return '<span>'+x+'</span>';}).join('')+'</div></div>';}
+    return '<div class="at-rail">'+lane('asis','As-is foundation',asis)+lane('auto','Automation',auto)+lane('intel','Intelligence / next-gen',intel)+'</div>';
+  }
+  /* small AI insight callout (advisory) reused across tools */
+  function aiCard(title,body,level,basis,amber){
+    return '<div class="at-alert'+(amber?'':'')+'"><div class="ah">'+sIco+'<path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"/></svg>Atlas AI &middot; '+title+'</div><div class="ad">'+body+'</div>'+adv(level||'Medium',basis||'grounded in connected estate data',amber)+'</div>';
+  }
 
   /* ===== SYNTHETIC DATA (NovaCura Pharmaceuticals) ===== */
   var VENDORS=[
@@ -306,15 +330,17 @@
     {id:'TPA-09',no:'TPA-2024-009',vid:'VEN-03',assets:['AST-1010'],brand:'Cross-brand',region:'North America',country:'United States',start:'2024-06-30',expiry:'2026-06-30',owner:'N. Reyes (Access)',bowner:'Market Access Lead',project:'Formulary access index',third:'NovaCura Market Access team',thirdc:'access@novacura.example',signatory:'VP Market Access',purpose:'Access analytics & reporting',usecaseCat:'Cascading',usecaseVal:'Market Access + CI users',renewal:true,status:'Active',format:'Master + Order Form',location:'SharePoint / TPA library',comms:'30-day reminder escalated; renewal at risk',submitted:'2024-05-15'}
   ];
   var REQUESTS=[
-    {id:'DP-2041',sub:'J. Alvarez',div:'Oncology',ta:'Oncology',subreg:'US',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'National Rx Longitudinal',country:'United States',dt:'Prescription (LRx)',desc:'Patient-level longitudinal Rx for mNSCLC brand tracking',vendor:'Helix Health Data',natsub:'National',cadence:'Monthly',threshold:'Above threshold',start:'2026-07-11',expiry:'2028-07-10',rationale:'Renewal of core NBRx source feeding the Tier-1 New-to-Brand Rx Share KPI',cost:1200000,anticipated:1260000,licenses:25,stage:'committee',link:'AST-1001'},
-    {id:'DP-2042',sub:'J. Alvarez',div:'Oncology',ta:'Oncology',subreg:'US',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Real-World Oncology Biomarker Panel',country:'United States',dt:'EMR / clinical',desc:'Biomarker-enriched oncology EMR extract for line-of-therapy work',vendor:'Helix Health Data',natsub:'National',cadence:'Monthly',threshold:'Above threshold',start:'2026-08-01',expiry:'2028-07-31',rationale:'Deepen biomarker view for OncoNova segmentation',cost:0,anticipated:710000,licenses:12,stage:'firstlevel',dup:'AST-1006'},
-    {id:'DP-2043',sub:'B. Osei',div:'Cardiology',ta:'Cardiology',subreg:'US',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Cardio Claims Refresh (Closed)',country:'United States',dt:'Claims (closed)',desc:'Closed claims supplement for HF persistence analysis',vendor:'Cardinal Claims Co',natsub:'National',cadence:'Monthly',threshold:'Below threshold',start:'2026-09-01',expiry:'2028-08-31',rationale:'Fill persistence gap below committee cost threshold',cost:0,anticipated:240000,licenses:10,stage:'firstlevel'},
-    {id:'DP-2044',sub:'M. Iqbal',div:'Neurology',ta:'Neurology',subreg:'US',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'Closed-Claims Patient Longitudinal',country:'United States',dt:'Claims (closed)',desc:'Renewal of MS switching-flow longitudinal source',vendor:'Solstice Data Partners',natsub:'National',cadence:'Monthly',threshold:'Above threshold',start:'2026-12-02',expiry:'2028-12-01',rationale:'Renewal of sole-source switching data for Neurovia',cost:1450000,anticipated:1520000,licenses:15,stage:'adminfinal',link:'AST-1005'},
-    {id:'DP-2045',sub:'T. Moller',div:'Cardiology',ta:'Cardiology',subreg:'US-Central',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Regional Sales Micro-Tracker',country:'United States',dt:'Sales / volume',desc:'Territory-level sales add-on for one region',vendor:'Brightpath Rx',natsub:'Sub-national',cadence:'Monthly',threshold:'Below threshold',start:'2026-08-15',expiry:'2027-08-14',rationale:'Local field analytics enhancement',cost:0,anticipated:60000,licenses:5,stage:'offline'},
-    {id:'DP-2046',sub:'K. Mensah',div:'Immunology',ta:'Immunology',subreg:'US',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'Specialty Pharmacy Dispense',country:'United States',dt:'Dispense / hub',desc:'Renewal of specialty dispense feeding persistence KPI',vendor:'Northstar Specialty Data',natsub:'National',cadence:'Weekly',threshold:'Above threshold',start:'2026-08-06',expiry:'2028-08-05',rationale:'Renewal of Gold-tier dispense source',cost:880000,anticipated:920000,licenses:18,stage:'approved',link:'AST-1002'},
-    {id:'DP-2047',sub:'F. Costa',div:'Rare Disease',ta:'Rare Disease',subreg:'EU',aff:'NovaCura EU',type:'New Purchase',exists:'No',dn:'PRO Survey Expansion (EU5)',country:'Multi-country',dt:'Survey / PRO',desc:'Expand RareGene PRO survey into additional EU markets',vendor:'Quanta Patient Insights',natsub:'National',cadence:'Quarterly',threshold:'Below threshold',start:'2026-09-15',expiry:'2027-09-14',rationale:'Extend PRO coverage for RareGene',cost:0,anticipated:140000,licenses:8,stage:'submitted'},
-    {id:'DP-2048',sub:'N. Reyes',div:'Market Access',ta:'Cross-brand',subreg:'US',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Formulary Access Add-on (Part D)',country:'United States',dt:'Payer / access',desc:'Additional Part D coverage detail for access index',vendor:'Verde Analytics',natsub:'National',cadence:'Monthly',threshold:'Above threshold',start:'2026-10-01',expiry:'2028-09-30',rationale:'Strengthen access index with Part D depth',cost:0,anticipated:300000,licenses:30,stage:'firstlevel',dup:'AST-1010'},
-    {id:'DP-2049',sub:'B. Osei',div:'Cardiology',ta:'Cardiology',subreg:'US',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'Open Medical & Pharmacy Claims',country:'United States',dt:'Claims (open)',desc:'Renewal of open claims source for CardioZen share',vendor:'Cardinal Claims Co',natsub:'National',cadence:'Monthly',threshold:'Above threshold',start:'2026-09-13',expiry:'2028-09-12',rationale:'Renewal of HF market-share source',cost:1600000,anticipated:1660000,licenses:30,stage:'committee',link:'AST-1003'}
+    {id:'DP-2041',sub:'J. Alvarez',div:'Oncology',ta:'Oncology',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'National Rx Longitudinal',country:'United States',dt:'Prescription (LRx)',desc:'Patient-level longitudinal Rx for mNSCLC brand tracking',vendor:'Helix Health Data',natsub:'National',cadence:'Monthly',start:'2026-07-11',expiry:'2028-07-10',rationale:'Renewal of core NBRx source feeding the Tier-1 New-to-Brand Rx Share KPI',cost:1200000,anticipated:1260000,licenses:25,status:'validation',link:'AST-1001'},
+    {id:'DP-2042',sub:'J. Alvarez',div:'Oncology',ta:'Oncology',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Real-World Oncology Biomarker Panel',country:'United States',dt:'EMR / clinical',desc:'Biomarker-enriched oncology EMR extract for line-of-therapy work',vendor:'Helix Health Data',natsub:'National',cadence:'Monthly',start:'2026-08-01',expiry:'2028-07-31',rationale:'Deepen biomarker view for OncoNova segmentation',cost:0,anticipated:710000,licenses:12,status:'pre_review',dup:'AST-1006'},
+    {id:'DP-2043',sub:'B. Osei',div:'Cardiology',ta:'Cardiology',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Cardio Claims Refresh (Closed)',country:'United States',dt:'Claims (closed)',desc:'Closed claims supplement for HF persistence analysis',vendor:'Cardinal Claims Co',natsub:'National',cadence:'Monthly',start:'2026-09-01',expiry:'2028-08-31',rationale:'Fill persistence gap; below the divisional cost threshold',cost:0,anticipated:240000,licenses:10,status:'cilt_review'},
+    {id:'DP-2044',sub:'M. Iqbal',div:'Neurology',ta:'Neurology',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'Closed-Claims Patient Longitudinal',country:'United States',dt:'Claims (closed)',desc:'Renewal of MS switching-flow longitudinal source',vendor:'Solstice Data Partners',natsub:'National',cadence:'Monthly',start:'2026-12-02',expiry:'2028-12-01',rationale:'Renewal of sole-source switching data for Neurovia',cost:1450000,anticipated:1520000,licenses:15,status:'recommendation',link:'AST-1005'},
+    {id:'DP-2045',sub:'T. Moller',div:'Cardiology',ta:'Cardiology',subreg:'US-Central',regionType:'APUS established',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Regional Sales Micro-Tracker',country:'United States',dt:'Sales / volume',desc:'Territory-level sales add-on for one region',vendor:'Brightpath Rx',natsub:'Sub-national',cadence:'Monthly',start:'2026-08-15',expiry:'2027-08-14',rationale:'Local field analytics enhancement',cost:0,anticipated:60000,licenses:5,status:'offline'},
+    {id:'DP-2046',sub:'K. Mensah',div:'Immunology',ta:'Immunology',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'Specialty Pharmacy Dispense',country:'United States',dt:'Dispense / hub',desc:'Renewal of specialty dispense feeding persistence KPI',vendor:'Northstar Specialty Data',natsub:'National',cadence:'Weekly',start:'2026-08-06',expiry:'2028-08-05',rationale:'Renewal of Gold-tier dispense source',cost:880000,anticipated:920000,licenses:18,status:'approved_completed',link:'AST-1002'},
+    {id:'DP-2047',sub:'F. Costa',div:'Rare Disease',ta:'Rare Disease',subreg:'EU',regionType:'International markets',aff:'NovaCura EU',type:'New Purchase',exists:'No',dn:'PRO Survey Expansion (EU5)',country:'Multi-country',dt:'Survey / PRO',desc:'Expand RareGene PRO survey into additional EU markets',vendor:'Quanta Patient Insights',natsub:'National',cadence:'Quarterly',start:'2026-09-15',expiry:'2027-09-14',rationale:'Extend PRO coverage for RareGene',cost:0,anticipated:140000,licenses:8,status:'draft'},
+    {id:'DP-2048',sub:'N. Reyes',div:'Market Access',ta:'Cross-brand',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Formulary Access Add-on (Part D)',country:'United States',dt:'Payer / access',desc:'Additional Part D coverage detail for access index',vendor:'Verde Analytics',natsub:'National',cadence:'Monthly',start:'2026-10-01',expiry:'2028-09-30',rationale:'Strengthen access index with Part D depth',cost:0,anticipated:300000,licenses:30,status:'in_cilt',dup:'AST-1010'},
+    {id:'DP-2049',sub:'B. Osei',div:'Cardiology',ta:'Cardiology',subreg:'US',regionType:'APUS established',aff:'NovaCura US',type:'Continuing Purchase',exists:'Yes',dn:'Open Medical & Pharmacy Claims',country:'United States',dt:'Claims (open)',desc:'Renewal of open claims source for CardioZen share',vendor:'Cardinal Claims Co',natsub:'National',cadence:'Monthly',start:'2026-09-13',expiry:'2028-09-12',rationale:'Renewal of HF market-share source',cost:1600000,anticipated:1660000,licenses:30,status:'approved_contracting',link:'AST-1003'},
+    {id:'DP-2050',sub:'M. Iqbal',div:'Neurology',ta:'Neurology',subreg:'US-West',regionType:'APUS established',aff:'NovaCura US',type:'New Purchase',exists:'No',dn:'Neuro Field Territory Tracker',country:'United States',dt:'Sales / volume',desc:'Sub-national neuro territory tracker for local teams',vendor:'Brightpath Rx',natsub:'Sub-national',cadence:'Monthly',start:'2026-08-20',expiry:'2027-08-19',rationale:'Local field analytics for Neurovia territories',cost:0,anticipated:45000,licenses:4,status:'sn_contracting'},
+    {id:'DP-2051',sub:'K. Mensah',div:'Immunology',ta:'Immunology',subreg:'Global',regionType:'Global',aff:'NovaCura Global',type:'New Purchase',exists:'No',dn:'Global Rheumatology Tracker (duplicate)',country:'Multi-country',dt:'Market research',desc:'Proposed global rheum tracker overlapping existing PMR tracker',vendor:'Orchid Market Research',natsub:'National',cadence:'Quarterly',start:'2026-09-10',expiry:'2027-09-09',rationale:'Requested global rheum tracker',cost:0,anticipated:180000,licenses:6,status:'rejected',dup:'AST-1008'}
   ];
 
   /* ===== lookups + rollups ===== */
@@ -471,7 +497,11 @@
   function toast(msg){var t=document.getElementById('atToast');t.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'+msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
   function row(l,v,full){return '<div'+(full?' class="full"':'')+'><dt>'+l+'</dt><dd>'+(v==null||v===''?'&mdash;':v)+'</dd></div>';}
   function dl(rows){return '<div class="at-dl">'+rows+'</div>';}
-  function grp(title,rows,gate,gateLabel){
+  function grp(title,rows,gate,gateLabel,pending,pendingMsg){
+    if(pending){
+      return '<div class="at-dgrp"><div class="gh">'+title+' <span class="pill gy">Pending</span></div>'
+        +'<div class="at-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>'+(pendingMsg||'Opens later in the workflow.')+'</div></div>';
+    }
     var lock=gate?'<div class="at-lock" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 11h14v10H5z"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Role-gated &mdash; visible to '+gateLabel+' only</div>':'';
     return '<div class="at-dgrp'+(gate?' at-gate':'')+'"'+(gate?' data-role="'+gate+'"':'')+'>'
       +'<div class="gh">'+title+(gate?' <span class="pill gy">Role-gated</span>':'')+'</div>'
@@ -482,7 +512,7 @@
   /* ===== SECTION: Command Centre ===== */
   function secOverview(){
     var atRisk=TPAS.filter(function(t){return daysTo(t.expiry)<=90;}).length;
-    var inflight=REQUESTS.filter(function(r){return r.stage!=='purchased'&&r.stage!=='offline';}).length;
+    var inflight=REQUESTS.filter(function(r){return !isApproved(r.status)&&r.status!=='rejected';}).length;
     var kpis='<div class="dx-kpis">'
       +'<div class="dx-kpi"><div class="v">'+ASSETS.length+'</div><div class="l">Catalogued data assets</div><div class="d up">'+ASSETS.filter(function(a){return a.quality==='Gold';}).length+' Gold-tier</div><span class="s">Data Catalogue</span></div>'
       +'<div class="dx-kpi"><div class="v">'+fmtM(TOTAL_SPEND)+'</div><div class="l">Contracted data spend</div><div class="d fl">'+VENDORS.length+' active vendors</div><span class="s">Model N &middot; SAP</span></div>'
@@ -519,37 +549,61 @@
   }
 
   /* ===== SECTION: Data Requests (CDSP-DPRH) ===== */
-  function stageLabel(s){return {submitted:'Submitted',firstlevel:'First-level review',committee:'Committee review',adminfinal:'Admin final',approved:'Approved',purchased:'Purchased',offline:'Offline (sub-national)'}[s]||s;}
-  function stagePill(s){var m={submitted:'gy',firstlevel:'bl',committee:'md',adminfinal:'md',approved:'lo',purchased:'lo',offline:'gy'};return '<span class="pill '+(m[s]||'gy')+'"><span class="pd"></span>'+stageLabel(s)+'</span>';}
+  /* live DPRH status model (from the CDSP portal KT) */
+  var ST_LABEL={draft:'Data sourcing draft',offline:'Submitted for offline review',sn_contracting:'Sub-national data for contracting by local teams',pre_review:'In data sourcing pre review',cilt_review:'Submitted for CILT review',validation:'Submitted for validation',in_cilt:'In CILT CDSP review',recommendation:'Recommendation available',approved_contracting:'Approved in contracting',approved_completed:'Approved purchase completed',rejected:'Rejected'};
+  function statusLabel(s){return ST_LABEL[s]||s;}
+  function statusPill(s){var m={draft:'gy',offline:'gy',sn_contracting:'bl',pre_review:'bl',cilt_review:'bl',validation:'md',in_cilt:'md',recommendation:'md',approved_contracting:'lo',approved_completed:'lo',rejected:'hi'};return '<span class="pill '+(m[s]||'gy')+'"><span class="pd"></span>'+statusLabel(s)+'</span>';}
+  function isApproved(s){return s==='approved_contracting'||s==='approved_completed';}
+  /* region-type cost thresholds (established / global / China etc differ) */
+  var REGION_THRESH={'APUS established':250000,'Global':500000,'China':150000,'International markets':300000};
+  function reqThreshold(r){return REGION_THRESH[r.regionType]||250000;}
+  function reqAbove(r){return r.anticipated>reqThreshold(r);}
+  function threshLabel(r){return reqAbove(r)?'Above threshold':'Below threshold';}
+  /* national approval-chain stage index for progressive disclosure */
+  function natStage(s){return ({draft:0,pre_review:1,cilt_review:1,rejected:1,validation:2,in_cilt:3,recommendation:4,approved_contracting:5,approved_completed:5})[s];}
   function secRequests(){
     var rows=REQUESTS.filter(function(r){return inDiv(r.ta);});
-    var cnt={submitted:0,firstlevel:0,committee:0,adminfinal:0,approved:0,purchased:0};
-    REQUESTS.forEach(function(r){if(cnt[r.stage]!=null)cnt[r.stage]++;});
-    var pipe='<div class="dx-pipe">'
-      +'<div class="dx-stage"><div class="sn">Submitted</div><div class="sc">'+cnt.submitted+'</div></div>'
-      +'<div class="dx-stage"><div class="sn">First-level</div><div class="sc">'+cnt.firstlevel+'</div></div>'
-      +'<div class="dx-stage"><div class="sn">Committee</div><div class="sc">'+cnt.committee+'</div></div>'
-      +'<div class="dx-stage"><div class="sn">Admin final</div><div class="sc">'+cnt.adminfinal+'</div></div>'
-      +'<div class="dx-stage acc"><div class="sn">Approved</div><div class="sc">'+cnt.approved+'</div></div>'
-      +'<div class="dx-stage acc"><div class="sn">Purchased</div><div class="sc">'+cnt.purchased+'</div></div>'
+    var inReview=function(st){return ['pre_review','cilt_review','validation','in_cilt','recommendation'].indexOf(st)>=0;};
+    var nRev=rows.filter(function(r){return inReview(r.status);}).length;
+    var nApp=rows.filter(function(r){return isApproved(r.status);}).length;
+    var nDup=rows.filter(function(r){return r.dup&&r.status!=='rejected';}).length;
+    var kpis='<div class="dx-kpis">'
+      +'<div class="dx-kpi"><div class="v">'+rows.length+'</div><div class="l">Requests in view</div><div class="d fl">role-gated workflow</div><span class="s">CDSP-DPRH</span></div>'
+      +'<div class="dx-kpi"><div class="v">'+nRev+'</div><div class="l">In active review</div><div class="d fl">awaiting decision</div><span class="s">Status engine</span></div>'
+      +'<div class="dx-kpi"><div class="v">'+nApp+'</div><div class="l">Approved</div><div class="d up">ready for catalogue</div><span class="s">Move-to-DC</span></div>'
+      +'<div class="dx-kpi"><div class="v">'+nDup+'</div><div class="l">Duplicate flags</div><div class="d dn">caught pre-spend</div><span class="s">Atlas AI</span></div>'
       +'</div>';
-    var dups=REQUESTS.filter(function(r){return r.dup&&inDiv(r.ta);});
-    var dupCard='';
-    if(dups.length){
-      dupCard='<div class="at-alert" style="margin-bottom:16px"><div class="ah">'+sIco+'<path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>Duplicate-buy detection &mdash; '+dups.length+' request'+(dups.length>1?'s':'')+' overlap the catalogue</div>'
-        +'<div class="ad">'+dups.map(function(r){var a=AMAP[r.dup];return '<b>'+r.id+'</b> ('+esc(r.dn)+') overlaps <span class="golink" data-go="catalogue">'+a.id+' '+esc(a.name)+'</span> &mdash; same vendor and therapeutic area. Estimated avoidable spend '+fmtUSD(a.cost)+'.';}).join('<br/>')+'</div>'
-        +adv('Medium','matched on vendor, therapeutic area and data type against catalogue records',true)+'</div>';
-    }
-    var tbl='<table class="dx-table"><thead><tr><th>Request</th><th>Data name</th><th>Vendor</th><th>Type</th><th>Routing</th><th>Cost (USD)</th><th>Stage</th></tr></thead><tbody>';
+    var rail=layerRail(
+      ['Combined role-gated form','Status-driven routing','Approval chain','Region-scoped review'],
+      ['Auto-status on submit','Renewal pre-fill from catalogue','Move-to-Catalogue (draft)','Power Automate notifications'],
+      ['Duplicate-buy detection (AI)','Approval-likelihood prediction','Status dashboard','Ask Atlas','Cross-links to Catalogue / Vendor / TPA']);
+    var chainNodes=[['Requester','submits combined form'],['Admin review','sets status / routes'],['Regional review','region-scoped + admin'],['CDS committee','regional + global + admin'],['Admin final','approves'],['Move to Catalogue','as a draft']];
+    var chain='<div class="at-lin">'+chainNodes.map(function(n,i){return (i>0?'<span class="lar">&rarr;</span>':'')+'<div class="ln"><div class="lk">Step '+(i+1)+'</div><div class="lv">'+n[0]+'</div><div class="lm">'+n[1]+'</div></div>';}).join('')+'</div>';
+    var order=['draft','offline','sn_contracting','pre_review','cilt_review','validation','in_cilt','recommendation','approved_contracting','approved_completed','rejected'];
+    var counts={};rows.forEach(function(r){counts[r.status]=(counts[r.status]||0)+1;});
+    var barRows=order.filter(function(st){return counts[st];}).map(function(st){return {n:statusLabel(st),v:counts[st],disp:counts[st]+'',c:(isApproved(st)?P.green:st==='rejected'?P.red:P.orange)};});
+    var dash=barRows.length?hbars(barRows,'',Math.max.apply(null,barRows.map(function(b){return b.v;}))):'<div class="at-empty">No requests in this division.</div>';
+    var dups=rows.filter(function(r){return r.dup&&r.status!=='rejected';});
+    var aiDup=dups.length?aiCard('Duplicate-buy detection at intake',
+        dups.map(function(r){var a=AMAP[r.dup];return '<b>'+r.id+'</b> ('+esc(r.dn)+') overlaps <span class="golink" data-go="catalogue">'+a.id+' '+esc(a.name)+'</span> &mdash; same vendor and therapeutic area. Avoidable spend about '+fmtUSD(a.cost)+'.';}).join('<br/>')
+        +'<br/><span style="color:var(--text-2)">Atlas also predicts approval likelihood and forecasts spend for each in-flight request.</span>',
+        'Medium','matched on vendor, therapeutic area and data type against the catalogue',true):'';
+    var tbl='<table class="dx-table"><thead><tr><th>Request</th><th>Data name</th><th>Vendor</th><th>Type</th><th>Routing</th><th>Cost (USD)</th><th>Status</th></tr></thead><tbody>';
     if(!rows.length)tbl+='<tr><td colspan="7"><div class="at-empty">No requests in this division.</div></td></tr>';
     rows.forEach(function(r){
       var costShown=r.type.indexOf('Continuing')>=0?fmtUSD(r.cost):fmtUSD(r.anticipated);
-      tbl+='<tr class="click" data-req="'+r.id+'"><td><b>'+r.id+'</b>'+(r.dup?' <span class="at-flag">'+sIco+'<path d="M4 15V3M4 3h11l-2 4 2 4H4"/></svg>dup</span>':'')+'</td><td>'+esc(r.dn)+'</td><td>'+esc(r.vendor)+'</td><td>'+(r.type.indexOf('Continuing')>=0?'<span class="pill bl">Renewal</span>':'<span class="pill gy">New</span>')+'</td><td>'+r.natsub+'<div class="at-mini" style="margin-top:2px">'+r.threshold+'</div></td><td class="num">'+costShown+'</td><td>'+stagePill(r.stage)+'</td></tr>';
+      var routing=r.natsub+(r.natsub==='National'?' &middot; '+threshLabel(r):'');
+      tbl+='<tr class="click" data-req="'+r.id+'"><td><b>'+r.id+'</b>'+(r.dup?' <span class="at-flag">'+sIco+'<path d="M4 15V3M4 3h11l-2 4 2 4H4"/></svg>dup</span>':'')+'</td><td>'+esc(r.dn)+'</td><td>'+esc(r.vendor)+'</td><td>'+(r.type.indexOf('Continuing')>=0?'<span class="pill bl">Renewal</span>':'<span class="pill gy">New</span>')+'</td><td>'+routing+'</td><td class="num">'+costShown+'</td><td>'+statusPill(r.status)+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>Data Requests &mdash; CDSP-DPRH</h2><p>The workflow front door. One combined, role-gated form raises and governs every data purchase before money is committed. Open a request to see the full record, the approval chain, and the built-in automation.</p></div>'
-      +'<div class="dx-card" style="margin-bottom:16px"><div class="dx-cardh"><div><h3>Approval pipeline</h3><div class="sub">Requester &rarr; Regional + Admin first-level &rarr; Committee &rarr; Admin final &rarr; Approved &rarr; Purchased</div></div></div>'+pipe+'<div class="at-mini">Routing rule: National &amp; above threshold runs the full process; National &amp; below threshold is at committee discretion; Sub-national is handled offline and does not enter DPRH.</div>'+SRC('SharePoint','Power Automate')+'</div>'
-      +dupCard
+    return '<div class="dx-sech"><h2>Data Requests &mdash; CDSP-DPRH</h2><p>The workflow front door. One combined, role-gated form raises and governs every data purchase before money is committed. Status is set automatically on submit, then the approval chain runs to purchase. Open a request for the full record, the role-gated tabs and the built-in automation.</p></div>'
+      +rail
+      +kpis
+      +'<div class="dx-card" style="margin-bottom:16px"><div class="dx-cardh"><div><h3>Approval workflow &amp; live status</h3><div class="sub">Requester &rarr; Admin review &rarr; Regional &rarr; CDS committee &rarr; Admin final &rarr; Catalogue</div></div></div>'+chain
+      +'<div style="margin-top:14px">'+dash+'</div>'
+      +'<div class="at-mini">Auto-routing on submit: Sub-national &rarr; <b>Submitted for offline review</b> (local teams). National with anticipated cost <b>above</b> the divisional threshold &rarr; <b>In data sourcing pre review</b>; <b>below</b> &rarr; <b>Submitted for CILT review</b>. Admin then routes national requests &mdash; setting <b>Submitted for validation</b> triggers Regional review then the CDS committee; any other status is terminal.</div>'
+      +SRC('CDSP-DPRH','SharePoint','Power Automate')+'</div>'
+      +(aiDup?'<div style="margin-bottom:16px">'+aiDup+'</div>':'')
       +'<div class="dx-card"><div class="dx-cardh"><div><h3>Requests</h3><div class="sub">Click a row to open the combined, role-gated form</div></div></div>'+tbl+SRC('CDSP-DPRH','SharePoint','Veeva CRM')+'</div>';
   }
   function drawerRequest(id){
@@ -557,99 +611,92 @@
     var v=vendorByName(r.vendor);
     var linkAsset=r.link?AMAP[r.link]:null;
     var dupAsset=r.dup?AMAP[r.dup]:null;
-    var prefill=linkAsset?'<div class="at-alert" style="margin-bottom:14px;border-color:rgba(5,99,193,.3);background:rgba(5,99,193,.05)"><div class="ah">'+sIco+'<path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Pre-filled from Data Catalogue</div><div class="ad">This is a renewal. Vendor, prior cost, scope and contract detail were read back from <span class="golink" data-go="catalogue">'+linkAsset.id+' '+esc(linkAsset.name)+'</span> when the requester selected the data being renewed.</div>'+adv('High','bidirectional sync with the catalogue record')+'</div>':'';
-    var dupWarn=dupAsset?'<div class="at-alert" style="margin-bottom:14px"><div class="ah">'+sIco+'<path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>Potential duplicate purchase</div><div class="ad">Atlas matched this request to <span class="golink" data-go="catalogue">'+dupAsset.id+' '+esc(dupAsset.name)+'</span> on vendor, therapeutic area and data type. Review against the existing asset before approving spend (about '+fmtUSD(dupAsset.cost)+').</div>'+adv('Medium','vendor + TA + data-type overlap against catalogue',true)+'</div>':'';
-    var offline=r.stage==='offline'?'<div class="at-alert" style="margin-bottom:14px"><div class="ah">'+sIco+'<path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>Sub-national &mdash; routed offline</div><div class="ad">This request is sub-national, so it does not run through DPRH. It is handled by the separate offline process and is shown here for visibility only.</div></div>':'';
-    /* approval chain */
-    var order=['submitted','firstlevel','committee','adminfinal','approved'];
-    var curIdx=order.indexOf(r.stage);if(r.stage==='purchased')curIdx=4;if(r.stage==='offline')curIdx=-1;
-    var chain='<div class="at-lin" style="margin-bottom:6px">'+['Submitted','First-level (Reg+Admin)','Committee','Admin final','Approved'].map(function(lab,i){
-      var st=i<curIdx?'Done':i===curIdx?'Current':'Pending';
-      var cls=i<curIdx?'g':i===curIdx?'a':'n';
-      return (i>0?'<span class="lar">&rarr;</span>':'')+'<div class="ln"><div class="lk">Stage '+(i+1)+'</div><div class="lv">'+lab+'</div><div class="lm"><span class="at-rag '+cls+'"><span class="rd"></span>'+st+'</span></div></div>';
-    }).join('')+'</div>';
-    /* role view switch */
-    var seg='<div class="at-btnrow"><div class="at-seg" id="atRoleSeg"><button data-role="requester" class="on">Requester</button><button data-role="regional">Regional</button><button data-role="committee">Committee</button><button data-role="admin">Admin</button></div><span class="at-mini" id="atRoleHint" style="margin-top:0">Viewing as Requester &mdash; review sections are role-gated. Switch role to reveal.</span></div>';
-    /* write-to-catalogue automation */
-    var writeBtn=(r.stage==='approved'||r.stage==='purchased')?'<div class="at-btnrow"><button class="at-btn" id="atWriteCat">Write to Data Catalogue</button><span class="at-mini" style="margin-top:0">Approved &mdash; pressing this writes every captured field into the catalogue as a new asset.</span></div>':'';
+    var sub=r.natsub==='Sub-national';
+    var ns=natStage(r.status);
+    var above=reqAbove(r);
     var usd=function(n){return fmtUSD(n)+' USD';};
-    /* sections */
-    var gReq=grp('Request',[
-      row('Submitter Name',esc(r.sub)),
-      row('Commercial division',r.div),
-      row('Sub Region/Affiliate',r.subreg),
-      row('Affiliate',r.aff),
-      row('New/Continuing Purchase',r.type),
-      row('Already in Data Catalog',r.exists),
-      row('Data Name',esc(r.dn)),
-      row('Data Country',r.country),
-      row('Data Type',r.dt),
-      row('Description of data',esc(r.desc),true),
-      row('Vendor',esc(r.vendor)),
-      row('National/Sub-national',r.natsub),
-      row('Data Cadence',r.cadence),
-      row('CDSP Cost Threshold',r.threshold),
-      row('Contract start Date',r.start),
-      row('Contract Expiring',r.expiry),
-      row('Business rationale for data purchase',esc(r.rationale),true)
+    var warn='<path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/>';
+    var prefill=linkAsset?'<div class="at-alert" style="margin-bottom:14px;border-color:rgba(5,99,193,.3);background:rgba(5,99,193,.05)"><div class="ah">'+sIco+'<path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Pre-filled from Data Catalogue</div><div class="ad">Continuing purchase. Vendor, prior cost, scope and contract detail were read back from <span class="golink" data-go="catalogue">'+linkAsset.id+' '+esc(linkAsset.name)+'</span> when the requester selected the data being renewed.</div>'+adv('High','bidirectional sync with the catalogue record')+'</div>':'';
+    var dupWarn=dupAsset?'<div class="at-alert" style="margin-bottom:14px"><div class="ah">'+sIco+warn+'</svg>Atlas AI &middot; potential duplicate purchase</div><div class="ad">Matched to <span class="golink" data-go="catalogue">'+dupAsset.id+' '+esc(dupAsset.name)+'</span> on vendor, therapeutic area and data type. Review before approving spend (about '+fmtUSD(dupAsset.cost)+').</div>'+adv('Medium','vendor + TA + data-type overlap against catalogue',true)+'</div>':'';
+    var subBanner=sub?'<div class="at-alert" style="margin-bottom:14px"><div class="ah">'+sIco+warn+'</svg>Sub-national &mdash; offline review</div><div class="ad">Sub-national requests are submitted for <b>offline review</b> and handled by local teams for contracting; they do not enter the regional / CDS committee chain.</div></div>':'';
+    var rejBanner=r.status==='rejected'?'<div class="at-alert red" style="margin-bottom:14px"><div class="ah">'+sIco+warn+'</svg>Rejected</div><div class="ad">Rejected at admin review'+(dupAsset?' &mdash; overlaps an existing catalogue asset':'')+'.</div></div>':'';
+    var routeMsg=sub?'Sub-national &rarr; auto-set to <b>Submitted for offline review</b> on submit.':'National &middot; anticipated '+fmtUSD(r.anticipated)+' vs '+r.regionType+' threshold '+fmtUSD(reqThreshold(r))+' &rarr; <b>'+(above?'Above':'Below')+' threshold</b> &rarr; auto-set to <b>'+(above?'In data sourcing pre review':'Submitted for CILT review')+'</b> on submit.';
+    var routeCard='<div class="at-dgrp"><div class="gh">Auto-routing</div><div class="at-mini" style="margin-top:0">'+routeMsg+'</div></div>';
+    var chainHtml;
+    if(sub){
+      var subCur=r.status==='sn_contracting'?2:1;
+      var subSteps=[['Submitted','offline review'],['Admin review','local teams'],['Contracting','by local teams']];
+      chainHtml='<div class="at-lin">'+subSteps.map(function(n,i){var st=i<subCur?'Done':i===subCur?'Current':'Pending';var cls=i<subCur?'g':i===subCur?'a':'n';return (i>0?'<span class="lar">&rarr;</span>':'')+'<div class="ln"><div class="lk">'+n[1]+'</div><div class="lv">'+n[0]+'</div><div class="lm"><span class="at-rag '+cls+'"><span class="rd"></span>'+st+'</span></div></div>';}).join('')+'</div>';
+    } else {
+      var steps=['Submitted','Admin review','Regional review','CDS committee','Admin final','Approved'];
+      var cur=r.status==='rejected'?1:ns;
+      chainHtml='<div class="at-lin">'+steps.map(function(lab,i){var st,cls;if(r.status==='rejected'&&i>=1){if(i===1){st='Rejected';cls='r';}else{st='Halted';cls='n';}}else{st=i<cur?'Done':i===cur?'Current':'Pending';cls=i<cur?'g':i===cur?'a':'n';}return (i>0?'<span class="lar">&rarr;</span>':'')+'<div class="ln"><div class="lk">Step '+(i+1)+'</div><div class="lv">'+lab+'</div><div class="lm"><span class="at-rag '+cls+'"><span class="rd"></span>'+st+'</span></div></div>';}).join('')+'</div>';
+    }
+    var seg='<div class="at-btnrow"><div class="at-seg" id="atRoleSeg"><button data-role="requester" class="on">Requester</button><button data-role="admin">Admin</button><button data-role="regional">Regional</button><button data-role="global">Global</button></div><span class="at-mini" id="atRoleHint" style="margin-top:0">Viewing as Requester &mdash; review tabs are role-gated and open progressively. Switch role to reveal.</span></div>';
+    var writeBtn=isApproved(r.status)?'<div class="at-btnrow"><button class="at-btn" id="atWriteCat">Move to Data Catalogue</button><span class="at-mini" style="margin-top:0">Approved &mdash; lands in the Data Catalogue as a <b>draft</b>; an admin completes the remaining fields to publish.</span></div>':'';
+    var gNotes=grp('Notes',[row('Requester notes','Raised via the CDSP-DPRH portal; attachments held on the request.',true),row('Latest update','Status: '+statusLabel(r.status)+'.',true)]);
+    var gReq=grp('Request &mdash; DPRH',[
+      row('Submitter Name',esc(r.sub)),row('Commercial division',r.div),row('Sub Region/Affiliate',r.subreg),row('Affiliate',r.aff),
+      row('New/Continuing Purchase',r.type),row('Already in Data Catalog',r.exists),row('Data Name',esc(r.dn)),row('Data Country',r.country),
+      row('Data Type',r.dt),row('Description of data',esc(r.desc),true),row('Vendor',esc(r.vendor)),row('National/Sub-national',r.natsub),
+      row('Data Cadence',r.cadence),row('CDSP Cost Threshold',sub?'N/A (sub-national)':threshLabel(r)+' ('+r.regionType+' default '+fmtUSD(reqThreshold(r))+')'),
+      row('Contract start Date',r.start),row('Contract Expiring',r.expiry),row('Business rationale for data purchase',esc(r.rationale),true)
     ]);
+    var changeVal=r.type.indexOf('Continuing')>=0?(r.anticipated>r.cost?'Continuing purchase &mdash; with change (cost uplift)':'Continuing purchase &mdash; without change'):'New scope';
     var gScope=grp('Scope, cost &amp; alternatives',[
       row('Entire or Partial Market',linkAsset?linkAsset.scope:(r.dt==='EMR / clinical'||r.dt==='Survey / PRO'?'Partial Market':'Full Market')),
       row('(Full) Vendor offers partial data?',v&&v.offers>3?'Yes':'No'),
-      row('(Full) Why purchase full market',r.natsub==='National'?'Full market needed for national share view':'&mdash;',true),
+      row('(Full) Why purchase full market',r.natsub==='National'?'Full market needed for national view':'&mdash;',true),
       row('(Partial) Scope of data',linkAsset&&linkAsset.scope==='Partial market'?'Targeted indication subset':'&mdash;'),
       row('Cost of data at last Purchase',r.type.indexOf('Continuing')>=0?usd(r.cost):'New purchase &mdash; none'),
-      row('Currency','USD'),
-      row('Cost to USD conversion','1.00'),
-      row('Anticipated cost at renewal',usd(r.anticipated)),
-      row('Currency (anticipated)','USD'),
-      row('Anticipated cost to USD','1.00'),
-      row('Change in purchase planned',r.type.indexOf('Continuing')>=0?'Like-for-like renewal':'New scope'),
-      row('Restrictions on sharing with NovaCura','Internal NovaCura use; no onward third-party sharing',true),
-      row('Number of licenses purchased',r.licenses),
-      row('Alternative data source exists?',dupAsset?'Yes':'No'),
-      row('Alternative Data Name',dupAsset?esc(dupAsset.name):'&mdash;'),
-      row('Alternative Data vendor',dupAsset?esc(dupAsset.vendor):'&mdash;'),
-      row('Reason for purchasing over alternatives',dupAsset?'Requester cites added biomarker depth &mdash; under review':'&mdash;',true),
-      row('Confirmed checked in catalog',r.exists==='Yes'||r.dup?'Yes':'Yes')
+      row('Currency','USD'),row('Cost to USD conversion','1.00'),row('Anticipated cost at next renewal',usd(r.anticipated)),
+      row('Currency (anticipated)','USD'),row('Anticipated cost to USD','1.00'),row('Change in purchase planned',changeVal),
+      row('Restrictions on sharing with NovaCura','Internal NovaCura use; no onward third-party sharing',true),row('Number of licenses purchased',r.licenses),
+      row('Alternative data source exists?',dupAsset?'Yes':'No'),row('Alternative Data Name',dupAsset?esc(dupAsset.name):'&mdash;'),
+      row('Alternative Data vendor',dupAsset?esc(dupAsset.vendor):'&mdash;'),row('Reason for purchasing over alternatives',dupAsset?'Requester cites added depth &mdash; under review':'&mdash;',true),
+      row('Confirmed checked in catalog','Yes')
     ]);
-    var gAdmin=grp('Admin review',[
-      row('Who needs to review the data request','Regional + Admin, then Committee'),
-      row('CR number','CR-'+r.id.replace('DP-','')),
-      row('Review outcome',r.stage==='approved'||r.stage==='purchased'?'Approved':r.stage==='offline'?'N/A (offline)':'In progress'),
-      row('PO',r.stage==='approved'||r.stage==='purchased'?'PO-'+r.id.replace('DP-',''):'Pending'),
-      row('Cost Center it will hit','CC-'+r.div.substring(0,3).toUpperCase()+'-204'),
-      row('Review Status',stageLabel(r.stage))
-    ],'admin','Admin reviewers');
-    var gCommittee=grp('Committee review',[
-      row('CI LT members','VP Commercial Insights; Sr Dir Data Procurement; Finance Partner'),
-      row('CD Comment &mdash; Need for data',r.div+' leadership confirms the data is required for '+esc(r.dn.toLowerCase())+'.',true)
-    ],'committee','Central Committee members');
-    var gValid=grp('First-level validation',[
-      row('Regional validation',curIdx>=1||r.stage==='approved'?'Validated':'Awaiting'),
-      row('Admin validation',curIdx>=1||r.stage==='approved'?'Validated':'Awaiting')
-    ],'regional admin','Regional &amp; Admin reviewers');
-    var gReg=grp('Regional reviewer',[
-      row('Reviewer Name','Regional CI Director'),
-      row('Recommendation Made',curIdx>=1?'Recommend proceed':'Pending'),
-      row('Comments','Interview held with requester; need confirmed.',true)
-    ],'regional','Regional reviewers');
-    var gCom=grp('Committee reviewer',[
-      row('Reviewer Name','Central Committee Chair'),
-      row('Recommendation Made',curIdx>=2?'Recommend proceed':'Pending'),
-      row('Comments',curIdx>=2?'Approved subject to standard TPA terms.':'Pending committee.',true)
-    ],'committee','Central Committee members');
-    var gFinal=grp('Admin final',[
-      row('Admin Recommendation',r.stage==='approved'||r.stage==='purchased'?'Approved for purchase':r.stage==='adminfinal'?'Final review in progress':'Pending'),
-      row('Admin Comments',r.stage==='approved'||r.stage==='purchased'?'Cleared; ready to write to catalogue.':'&mdash;',true),
-      row('Expected Review Completion date',r.stage==='approved'||r.stage==='purchased'?'Complete':'2026-07-15')
-    ],'admin','Admin reviewers');
-    return '<div class="at-dh"><div><h3>'+r.id+' &middot; '+esc(r.dn)+'</h3><div class="dsub">'+esc(r.vendor)+' &middot; '+r.div+' &middot; '+r.natsub+' &middot; '+stageLabel(r.stage)+'</div></div>'+dhClose+'</div>'
+    var outcome=isApproved(r.status)?'Approved':r.status==='rejected'?'Rejected':sub?'Routed to local teams':'In progress';
+    var po=isApproved(r.status)?'PO-'+r.id.replace('DP-',''):'Pending';
+    var sections;
+    if(sub){
+      var gAdminS=grp('Admin review',[
+        row('Who needs to review the data request','Admin (local contracting)'),
+        row('Review outcome',r.status==='sn_contracting'?'Sub-national data for contracting by local teams':outcome),
+        row('CR number','CR-'+r.id.replace('DP-','')),row('Cost Center it will hit','CC-'+r.div.substring(0,3).toUpperCase()+'-204'),
+        row('Review Status',statusLabel(r.status))
+      ],'admin','Admin reviewers');
+      sections=gNotes+gReq+gScope+gAdminS;
+    } else {
+      var aR=ns>=1, rR=ns>=2, cR=ns>=3, fR=ns>=4;
+      var gAdmin=grp('Admin review',[
+        row('Who needs to review the data request','Regional + Admin, then CDS committee'),row('CR number','CR-'+r.id.replace('DP-','')),
+        row('Review outcome',outcome),row('PO',po),row('Cost Center it will hit','CC-'+r.div.substring(0,3).toUpperCase()+'-204'),
+        row('Review Status',statusLabel(r.status))
+      ],'admin','Admin reviewers', !aR, 'Opens once the requester submits the form.');
+      var gReg=grp('Regional reviewer',[
+        row('Reviewer group',r.regionType+' reviewers'),row('Reviewer Name','Regional CI Director ('+r.regionType+')'),row('Region-scoped','Visible only to the '+r.regionType+' reviewer group, plus Admin',true),
+        row('Regional validation',rR?(cR?'Validated':'In review'):'Awaiting'),row('Admin validation',rR?(cR?'Validated':'In review'):'Awaiting'),
+        row('Recommendation Made',cR?'Recommend proceed':rR?'In review':'Pending'),row('Comments',rR?'Interview held with requester; need confirmed.':'&mdash;',true)
+      ],'regional admin','Regional reviewers &amp; Admin', !rR, 'Opens when Admin sets the status to "Submitted for validation".');
+      var gCom=grp('CDS committee review',[
+        row('Reviewers','Regional reviewers + Global reviewers + Admin'),row('Reviewer Name','CDS Committee Chair'),row('CDS / CI LT members','VP Commercial Insights; Sr Dir Data Procurement; Global Reviewer; Finance Partner',true),
+        row('Recommendation Made',fR?'Recommend proceed':cR?'In review':'Pending'),row('Comments',cR?'Committee endorsed subject to standard TPA terms.':'Pending committee.',true),row('CD Comment &mdash; Need for data',r.div+' leadership confirms the data is required for '+esc(r.dn.toLowerCase())+'.',true)
+      ],'regional global admin','Regional, Global reviewers &amp; Admin', !cR, 'Opens after regional review, at the CDS committee step.');
+      var gFinal=grp('Admin final',[
+        row('Admin Recommendation',isApproved(r.status)?'Approved for purchase':fR?'Final review in progress':'Pending'),
+        row('Admin Comments',isApproved(r.status)?'Cleared; ready to move to catalogue.':'&mdash;',true),
+        row('Final status',statusLabel(r.status)),row('Expected Review Completion date',isApproved(r.status)?'Complete':'2026-07-15')
+      ],'admin','Admin reviewers', !fR, 'Opens after the CDS committee records a recommendation.');
+      sections=gNotes+gReq+gScope+gAdmin+gReg+gCom+gFinal;
+    }
+    return '<div class="at-dh"><div><h3>'+r.id+' &middot; '+esc(r.dn)+'</h3><div class="dsub">'+esc(r.vendor)+' &middot; '+r.div+' &middot; '+r.natsub+' &middot; '+statusLabel(r.status)+'</div></div>'+dhClose+'</div>'
       +'<div class="at-dbody">'
       +seg
-      +offline+prefill+dupWarn
-      +'<div class="at-dgrp"><div class="gh">Approval chain</div>'+chain+'</div>'
-      +gReq+gScope+gValid+gReg+gCommittee+gCom+gAdmin+gFinal
+      +rejBanner+subBanner+prefill+dupWarn
+      +routeCard
+      +'<div class="at-dgrp"><div class="gh">Approval chain</div>'+chainHtml+'</div>'
+      +sections
       +writeBtn
       +SRC('CDSP-DPRH','SharePoint','Power Automate','Microsoft Purview')
       +'</div>';
@@ -664,15 +711,16 @@
     });
     d.querySelectorAll('#atRoleSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.role===role);});
     var hint=d.querySelector('#atRoleHint');
-    if(hint){var m={requester:'Viewing as Requester &mdash; review sections are role-gated. Switch role to reveal.',regional:'Viewing as Regional reviewer &mdash; you can see your validation and reviewer fields.',committee:'Viewing as Committee member &mdash; committee review fields are visible.',admin:'Viewing as Admin reviewer &mdash; admin and final-review fields are visible.'};hint.innerHTML=m[role];}
+    if(hint){var m={requester:'Viewing as Requester &mdash; review tabs are role-gated and open progressively. Switch role to reveal.',admin:'Viewing as Admin &mdash; you can see and set status across admin, regional and final review.',regional:'Viewing as Regional reviewer &mdash; your region-scoped review and the CDS committee tab are visible.',global:'Viewing as Global reviewer &mdash; the CDS committee review is visible.'};hint.innerHTML=m[role]||'';}
   }
+
   function wireRequests(){
     document.querySelectorAll('#atApp [data-req]').forEach(function(tr){tr.onclick=function(){
       openDrawer(drawerRequest(tr.getAttribute('data-req')));
       var seg=document.getElementById('atRoleSeg');
       if(seg){seg.querySelectorAll('button').forEach(function(b){b.onclick=function(){setViewRole(b.dataset.role);};});setViewRole('requester');}
       var wc=document.getElementById('atWriteCat');
-      if(wc)wc.onclick=function(){toast('Written to Data Catalogue as AST-1013');wc.disabled=true;wc.textContent='Written to Catalogue';wc.classList.remove('at-btn');wc.classList.add('at-btn2');};
+      if(wc)wc.onclick=function(){toast('Moved to Data Catalogue as a draft (AST-1013) &mdash; complete it in the Catalogue to publish');wc.disabled=true;wc.textContent='Moved to Catalogue (draft)';wc.classList.remove('at-btn');wc.classList.add('at-btn2');};
     };});
   }
 
@@ -701,7 +749,7 @@
       tbl+='<tr class="click" data-asset="'+a.id+'"><td><b>'+a.id+'</b><div class="at-mini" style="margin-top:2px">'+esc(a.name)+'</div></td><td>'+esc(VMAP[a.vid].name)+'</td><td>'+a.ta+'<div class="at-mini" style="margin-top:2px">'+a.brand+'</div></td><td>'+tierPill(a.quality)+'</td><td>'+sens+'</td><td class="num">'+fmtUSD(a.cost)+'</td><td>'+a.cadence+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>Data Catalogue</h2><p>The central record of every data asset NovaCura has purchased &mdash; the system of record everything else links to. Anyone can reference it to see what already exists and avoid duplication. Entries arrive from an approved request, a renewal read-back, or a manual entry.</p></div>'
+    return '<div class="dx-sech"><h2>Data Catalogue</h2><p>The central record of every data asset NovaCura has purchased &mdash; the system of record everything else links to. Anyone can reference it to see what already exists and avoid duplication. Entries arrive from an approved request, a renewal read-back, or a manual entry.</p></div>'+layerRail(['Full asset record','Gold / Silver / Bronze','PII / PHI flags','Three entry routes'],['PII/PHI auto-classification','Approved-request sync','Renewal read-back'],['Quality-risk flags (AI)','Overlap detection','Quality dashboard','Ask Atlas','Lineage cross-links'])
       +'<div class="dx-card" style="margin-bottom:16px"><div class="at-btnrow" style="margin-top:0;justify-content:space-between"><div><h3 style="font-size:15px;font-weight:700">Add to catalogue</h3><div class="sub" style="font-size:12px;color:var(--text-2);margin-top:2px">Manual entry with automatic PII/PHI classification and a quality suggestion</div></div><button class="at-btn" id="atNewAsset">New manual entry</button></div></div>'
       +kpis
       +'<div class="dx-grid dx-g23" style="margin-bottom:16px"><div class="dx-card"><div class="dx-cardh"><div><h3>Quality distribution</h3><div class="sub">Gold / Silver / Bronze across the catalogue</div></div></div>'+dn+SRC('Data Catalogue','Microsoft Purview')+'</div><div class="dx-card">'+flagCard+SRC('Data Catalogue','KPI Catalogue')+'</div></div>'
@@ -819,9 +867,9 @@
       tbl+='<tr class="click" data-kpi="'+k.id+'"><td><b>'+esc(k.name)+'</b>'+(k.retired?' <span class="pill gy">retired</span>':'')+(risk?' <span class="at-flag">'+sIco+'<path d="M4 15V3M4 3h11l-2 4 2 4H4"/></svg>quality</span>':'')+'<div class="at-mini" style="margin-top:2px">'+k.id+'</div></td><td>'+k.type+'</td><td>'+(k.scope==='Global'?'<span class="pill bl">Global</span>':k.scope==='Regional'?'<span class="pill md">Regional</span>':'<span class="pill gy">Local</span>')+'</td><td>'+k.brand+'</td><td>'+k.src.map(function(id){return id;}).join(', ')+'</td><td>'+k.cadence+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>KPI Catalogue</h2><p>The registry of KPIs and metrics built on purchased data. Each KPI records its definition, methodology, market definition, cadence, deliverables, contacts &mdash; and the source asset it depends on, linking every metric back to the Data Catalogue.</p></div>'
+    return '<div class="dx-sech"><h2>KPI Catalogue</h2><p>The registry of KPIs and metrics built on purchased data. Each KPI records its definition, methodology, market definition, cadence, deliverables, contacts &mdash; and the source asset it depends on, linking every metric back to the Data Catalogue.</p></div>'+layerRail(['Full KPI metadata','Source link','Lifecycle / retire'],['Lineage auto-resolve','Retirement propagation'],['Source quality-risk (AI)','Impact analysis','Scope dashboard','Ask Atlas','Asset & vendor lineage'])
       +kpis
-      +'<div class="dx-card"><div class="dx-cardh"><div><h3>KPIs &amp; metrics</h3><div class="sub">Click a row for full metadata and the asset/vendor lineage</div></div></div>'+tbl+adv('High','lineage resolved from each KPI&rsquo;s data-source link to catalogue assets')+SRC('KPI Catalogue','Data Catalogue','Microsoft Purview')+'</div>';
+      +(riskKpis.length?'<div style="margin-bottom:16px">'+aiCard('Source quality risk','One or more Global KPIs draw on a Bronze-tier asset &mdash; treat outputs as directional and review before external use. Flagged rows are marked below.','High','KPI scope cross-referenced with source-asset quality',true)+'</div>':'')+'<div class="dx-card"><div class="dx-cardh"><div><h3>KPIs &amp; metrics</h3><div class="sub">Click a row for full metadata and the asset/vendor lineage</div></div></div>'+tbl+adv('High','lineage resolved from each KPI&rsquo;s data-source link to catalogue assets')+SRC('KPI Catalogue','Data Catalogue','Microsoft Purview')+'</div>';
   }
   function drawerKpi(id){
     var k=KMAP[id];if(!k)return '';
@@ -887,7 +935,7 @@
       tbl+='<tr class="click" data-vendor="'+v.id+'"><td><b>'+esc(v.name)+'</b><div class="at-mini" style="margin-top:2px">'+v.rel+' &middot; '+v.country+'</div></td><td>'+esc(v.desc)+'</td><td class="num">'+r.purchased+' / '+v.offers+'</td><td>'+(r.mix.Gold?'<span class="at-tier gold">'+r.mix.Gold+'G</span> ':'')+(r.mix.Silver?'<span class="at-tier silver">'+r.mix.Silver+'S</span> ':'')+(r.mix.Bronze?'<span class="at-tier bronze">'+r.mix.Bronze+'B</span>':'')+'</td><td class="num">'+fmtUSD(r.spend)+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>Vendor Hub</h2><p>The vendor inventory: who our data vendors are, what data they hold, and what we have purchased versus what is still available. A vendor-centric view of the estate &mdash; the foundation the Vendor Hub Plus value layer rolls up from.</p></div>'
+    return '<div class="dx-sech"><h2>Vendor Hub</h2><p>The vendor inventory: who our data vendors are, what data they hold, and what we have purchased versus what is still available. A vendor-centric view of the estate &mdash; the foundation the Vendor Hub Plus value layer rolls up from.</p></div>'+layerRail(['Vendor inventory','Purchased vs available','Access & guidance'],['Asset-to-vendor rollup','Spend aggregation'],['Vendor Hub Plus (AI)','Concentration / HHI','Value dashboard','Ask Atlas','Asset & KPI cross-links'])
       +kpis
       +'<div class="dx-card" style="margin-bottom:16px"><div class="at-btnrow" style="margin-top:0;justify-content:space-between;align-items:center"><div><h3 style="font-size:15px;font-weight:700">Vendor value intelligence</h3><div style="font-size:12px;color:var(--text-2);margin-top:2px">Quality, concentration, irreplaceability, cost-per-quality and leverage roll up in Vendor Hub Plus</div></div><button class="at-btn2" data-go="vendorplus">Open Vendor Hub Plus</button></div></div>'
       +'<div class="dx-card"><div class="dx-cardh"><div><h3>Vendors</h3><div class="sub">Click a vendor for what they hold and how to access it</div></div></div>'+tbl+SRC('Vendor Hub','SharePoint','Veeva CRM')+'</div>';
@@ -1005,7 +1053,7 @@
       tbl+='<tr class="click" data-tpa="'+t.id+'"><td><b>'+t.no+'</b><div class="at-mini" style="margin-top:2px">'+t.id+'</div></td><td>'+esc(VMAP[t.vid].name)+'</td><td>'+(a?esc(a.name):'&mdash;')+'<div class="at-mini" style="margin-top:2px">'+t.brand+'</div></td><td class="num">'+t.expiry+'</td><td><span class="at-rag '+ragDays(d)+'"><span class="rd"></span>'+d+'d</span></td><td>'+reminderChips(d)+'</td><td>'+(pr.p==='High'?'<span class="pill lo">Renew &middot; High</span>':pr.p==='Low'?'<span class="pill hi">Review &middot; Low</span>':'<span class="pill md">Renew &middot; Med</span>')+'</td></tr>';
     });
     tbl+='</tbody></table>';
-    return '<div class="dx-sech"><h2>TPA Hub</h2><p>The third-party agreement register, with the 30/60/90-day expiry reminder engine running on every record. Both a system of record and an active reminder service &mdash; and, layered on top, renewal prediction and cross-tool warnings when an expiring agreement sits behind a strategic KPI.</p></div>'
+    return '<div class="dx-sech"><h2>TPA Hub</h2><p>The third-party agreement register, with the 30/60/90-day expiry reminder engine running on every record. Both a system of record and an active reminder service &mdash; and, layered on top, renewal prediction and cross-tool warnings when an expiring agreement sits behind a strategic KPI.</p></div>'+layerRail(['Agreement register','Signatories & scope','Permitted use'],['30/60/90 reminders','Owner escalation','Email notifications'],['Renewal prediction (AI)','KPI-impact warning','Runway dashboard','Ask Atlas','Vendor & asset cross-links'])
       +kpis
       +'<div class="dx-card" style="margin-bottom:16px"><div class="dx-cardh"><div><h3>Expiry runway</h3><div class="sub">Reminders fire automatically at 90, 60 and 30 days; &le; 30 days escalates to the owner</div></div></div>'+runway+SRC('TPA Hub','Power Automate','SharePoint')+'</div>'
       +'<div class="dx-card" style="margin-bottom:16px">'+warnCard+SRC('TPA Hub','KPI Catalogue','Data Catalogue')+'</div>'
